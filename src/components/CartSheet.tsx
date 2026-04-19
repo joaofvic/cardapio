@@ -130,88 +130,92 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
 
               <Separator className="my-6" />
 
-              {/* Delivery Toggle */}
-              <div className="flex items-center space-x-2 px-1 mb-6">
-                <Checkbox 
-                  id="not-home" 
-                  checked={isNotHome} 
-                  onCheckedChange={(checked) => setIsNotHome(!!checked)}
-                />
-                <Label 
-                  htmlFor="not-home" 
-                  className="text-sm font-bold cursor-pointer select-none text-foreground/80"
-                >
-                  Não estou em casa
-                </Label>
-              </div>
-
-              {/* Delivery Address Section - Conditional */}
-              {isNotHome && (
-                <div className="space-y-4 pb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="bg-primary/10 p-1.5 rounded-lg">
-                      <MapPin className="text-primary" size={18} />
-                    </div>
-                    <h3 className="font-bold text-lg">Local de Entrega</h3>
+              {/* Delivery Section */}
+              <div className="space-y-4 pb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-primary/10 p-1.5 rounded-lg">
+                    <MapPin className="text-primary" size={18} />
                   </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    type="button"
-                    className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5 h-12 flex items-center gap-2 font-bold"
-                    onClick={handleGetLocation}
-                  >
-                    <MapPin size={18} />
-                    Usar minha localização atual
-                  </Button>
-
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="col-span-3 space-y-2">
-                      <Label htmlFor="street" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rua / Avenida</Label>
-                      <Input 
-                        id="street" 
-                        placeholder="Nome da rua..." 
-                        className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                        value={address.street}
-                        onChange={(e) => setAddress({...address, street: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-span-1 space-y-2">
-                      <Label htmlFor="number" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nº</Label>
-                      <Input 
-                        id="number" 
-                        placeholder="42" 
-                        className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                        value={address.number}
-                        onChange={(e) => setAddress({...address, number: e.target.value})}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="neighborhood" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bairro</Label>
-                      <Input 
-                        id="neighborhood" 
-                        placeholder="Ex: Centro" 
-                        className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                        value={address.neighborhood}
-                        onChange={(e) => setAddress({...address, neighborhood: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="complement" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Complemento</Label>
-                      <Input 
-                        id="complement" 
-                        placeholder="Apto, bloco..." 
-                        className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                        value={address.complement}
-                        onChange={(e) => setAddress({...address, complement: e.target.value})}
-                      />
-                    </div>
-                  </div>
+                  <h3 className="font-bold text-lg">Local de Entrega</h3>
                 </div>
-              )}
+                
+                {/* Priority: Use current location button */}
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  className="w-full rounded-xl border-primary text-primary hover:bg-primary/5 h-12 flex items-center gap-2 font-bold shadow-sm transition-all hover:scale-[1.01]"
+                  onClick={handleGetLocation}
+                >
+                  <MapPin size={18} />
+                  Usar minha localização atual
+                </Button>
+
+                {/* Manual Address Toggle */}
+                <div className="flex items-center space-x-2 px-1 pt-2">
+                  <Checkbox 
+                    id="not-home" 
+                    checked={isNotHome} 
+                    onCheckedChange={(checked) => setIsNotHome(!!checked)}
+                  />
+                  <Label 
+                    htmlFor="not-home" 
+                    className="text-sm font-bold cursor-pointer select-none text-foreground/80"
+                  >
+                    Não estou em casa (Informar endereço)
+                  </Label>
+                </div>
+
+                {/* Conditional Manual Address Fields */}
+                {isNotHome && (
+                  <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="col-span-3 space-y-2">
+                        <Label htmlFor="street" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rua / Avenida</Label>
+                        <Input 
+                          id="street" 
+                          placeholder="Nome da rua..." 
+                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                          value={address.street}
+                          onChange={(e) => setAddress({...address, street: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-span-1 space-y-2">
+                        <Label htmlFor="number" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nº</Label>
+                        <Input 
+                          id="number" 
+                          placeholder="42" 
+                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                          value={address.number}
+                          onChange={(e) => setAddress({...address, number: e.target.value})}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="neighborhood" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bairro</Label>
+                        <Input 
+                          id="neighborhood" 
+                          placeholder="Ex: Centro" 
+                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                          value={address.neighborhood}
+                          onChange={(e) => setAddress({...address, neighborhood: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="complement" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Complemento</Label>
+                        <Input 
+                          id="complement" 
+                          placeholder="Apto, bloco..." 
+                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                          value={address.complement}
+                          onChange={(e) => setAddress({...address, complement: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </ScrollArea>
