@@ -277,7 +277,8 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                           placeholder="42" 
                           className="h-12 rounded-xl bg-muted/30 border-none"
                           value={address.number}
-                          onChange={(e) => setAddress({...address, number: e.target.value})}
+                          inputMode="numeric"
+                          onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, '')})}
                         />
                       </div>
                     </div>
