@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { CartItem } from "@/app/types/meal";
 import {
   Sheet,
@@ -15,17 +14,10 @@ import {
   Plus, 
   Minus, 
   Trash2, 
-  ShoppingBag, 
-  CreditCard, 
-  Smartphone, 
-  Banknote, 
-  QrCode, 
-  Wallet 
+  ShoppingBag 
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -36,20 +28,9 @@ interface CartSheetProps {
 }
 
 export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartSheetProps) {
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const deliveryFee = items.length > 0 ? 9.90 : 0;
   const total = subtotal + deliveryFee;
-
-  const paymentMethods = [
-    { id: 'nupay', label: 'NuPay', icon: Wallet },
-    { id: 'applepay', label: 'Apple Pay', icon: Smartphone },
-    { id: 'googlepay', label: 'Google Pay', icon: Smartphone },
-    { id: 'card', label: 'Cartão', icon: CreditCard },
-    { id: 'pix', label: 'Pix', icon: QrCode },
-    { id: 'cash', label: 'Dinheiro', icon: Banknote },
-  ];
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
@@ -123,48 +104,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                   </div>
                 ))}
               </div>
-
-              <Separator className="bg-border/50" />
-
-              <div className="py-2">
-                <h4 className="text-sm font-black uppercase tracking-widest mb-4 text-foreground/70">Forma de Pagamento</h4>
-                <RadioGroup 
-                  value={paymentMethod} 
-                  onValueChange={setPaymentMethod}
-                  className="grid grid-cols-2 gap-3"
-                >
-                  {paymentMethods.map((method) => {
-                    const Icon = method.icon;
-                    const isSelected = paymentMethod === method.id;
-                    return (
-                      <div key={method.id} className="relative">
-                        <RadioGroupItem 
-                          value={method.id} 
-                          id={method.id} 
-                          className="peer sr-only" 
-                        />
-                        <Label
-                          htmlFor={method.id}
-                          className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${
-                            isSelected 
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary' 
-                            : 'border-muted bg-white hover:bg-muted/50'
-                          }`}
-                        >
-                          <div className={`p-2 rounded-xl transition-colors ${
-                            isSelected ? 'bg-primary/10' : 'bg-muted'
-                          }`}>
-                            <Icon size={18} className={isSelected ? 'text-primary' : 'text-foreground'} />
-                          </div>
-                          <span className={`font-bold text-sm ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                            {method.label}
-                          </span>
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </RadioGroup>
-              </div>
             </div>
           )}
         </ScrollArea>
@@ -188,7 +127,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
             </div>
             <SheetFooter>
               <Button className="w-full h-14 rounded-full text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
-                Finalizar com {paymentMethods.find(m => m.id === paymentMethod)?.label}
+                Finalizar Pedido
               </Button>
             </SheetFooter>
           </div>
