@@ -21,7 +21,8 @@
             "number": { "type": "string" },
             "neighborhood": { "type": "string" },
             "city": { "type": "string", "default": "São Miguel - RN" },
-            "complement": { "type": "string" }
+            "complement": { "type": "string" },
+            "reference": { "type": "string", "description": "A landmark or point of reference for delivery." }
           }
         }
       },

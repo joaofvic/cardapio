@@ -22,6 +22,7 @@ export type UserProfile = {
     neighborhood: string;
     city: string;
     complement?: string;
+    reference?: string;
   };
 };
 

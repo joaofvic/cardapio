@@ -29,7 +29,8 @@ import {
   Ticket,
   User,
   Phone,
-  Loader2
+  Loader2,
+  ChevronDown
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -74,7 +75,8 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
     number: '',
     neighborhood: '',
     city: 'São Miguel - RN',
-    complement: ''
+    complement: '',
+    reference: ''
   });
 
   const { toast } = useToast();
@@ -91,7 +93,14 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
 
   useEffect(() => {
     if (user?.address && user.address.street) {
-      setAddress(user.address);
+      setAddress({
+        street: user.address.street || '',
+        number: user.address.number || '',
+        neighborhood: user.address.neighborhood || '',
+        city: user.address.city || 'São Miguel - RN',
+        complement: user.address.complement || '',
+        reference: user.address.reference || ''
+      });
       setIsNotHome(true);
     }
   }, [user, isOpen]);
@@ -109,7 +118,16 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
             setName(data.name);
-            if (data.address) setAddress(data.address);
+            if (data.address) {
+              setAddress({
+                street: data.address.street || '',
+                number: data.address.number || '',
+                neighborhood: data.address.neighborhood || '',
+                city: data.address.city || 'São Miguel - RN',
+                complement: data.address.complement || '',
+                reference: data.address.reference || ''
+              });
+            }
           }
         } catch (e) {
           // Silent per guidelines
@@ -153,7 +171,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
           setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
         }
       }, () => {
-        // Handled silently per guidelines
+        // Silent per guidelines
       });
     }
   };
@@ -351,6 +369,15 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
                         <Input value="São Miguel - RN" disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
                       </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
+                      <Input 
+                        placeholder="Ex: Próximo ao mercado..." 
+                        className="h-12 rounded-xl bg-muted/30 border-none" 
+                        value={address.reference} 
+                        onChange={(e) => setAddress({...address, reference: e.target.value})} 
+                      />
                     </div>
                   </div>
                 )}
