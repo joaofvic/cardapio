@@ -361,36 +361,39 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">
                   {paymentType === 'online' ? 'Métodos Online' : 'Métodos na Entrega'}
                 </h3>
-                <RadioGroup 
-                  value={selectedPayment} 
-                  onValueChange={setSelectedPayment}
-                  className="grid grid-cols-1 gap-3"
-                >
-                  {filteredMethods.map((method) => (
-                    <Label
-                      key={method.id}
-                      htmlFor={method.id}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
-                        selectedPayment === method.id 
-                          ? "border-primary bg-primary/5 shadow-sm" 
-                          : "border-muted bg-white hover:border-primary/30"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-2 rounded-xl",
-                          selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                        )}>
-                          <method.icon size={20} />
+                {/* Key triggers re-animation when paymentType changes */}
+                <div key={paymentType} className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both">
+                  <RadioGroup 
+                    value={selectedPayment} 
+                    onValueChange={setSelectedPayment}
+                    className="grid grid-cols-1 gap-3"
+                  >
+                    {filteredMethods.map((method) => (
+                      <Label
+                        key={method.id}
+                        htmlFor={method.id}
+                        className={cn(
+                          "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
+                          selectedPayment === method.id 
+                            ? "border-primary bg-primary/5 shadow-sm" 
+                            : "border-muted bg-white hover:border-primary/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-2 rounded-xl",
+                            selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                          )}>
+                            <method.icon size={20} />
+                          </div>
+                          <span className="font-bold">{method.label}</span>
                         </div>
-                        <span className="font-bold">{method.label}</span>
-                      </div>
-                      <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
-                      {selectedPayment === method.id && <CheckCircle2 size={20} className="text-primary" />}
-                    </Label>
-                  ))}
-                </RadioGroup>
+                        <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
+                        {selectedPayment === method.id && <CheckCircle2 size={20} className="text-primary" />}
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
               </div>
             </div>
           )}
