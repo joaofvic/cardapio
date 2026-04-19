@@ -34,8 +34,25 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+
+const CITIES = [
+  "São Miguel - RN",
+  "Coronel João Pessoa - RN",
+  "Dr. Severiano - RN",
+  "Encanto - RN",
+  "Pau dos Ferros - RN",
+  "Ereré - CE",
+  "Pereiro - CE"
+];
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -129,7 +146,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   const filteredMethods = paymentMethods.filter(m => m.type === paymentType);
 
   return (
-    <Sheet border-none shadow-none open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden">
         
         {/* Header - Changes based on step */}
@@ -294,12 +311,21 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Cidade</Label>
-                        <Input 
-                          placeholder="Sua cidade..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none"
-                          value={address.city}
-                          onChange={(e) => setAddress({...address, city: e.target.value})}
-                        />
+                        <Select 
+                          value={address.city} 
+                          onValueChange={(value) => setAddress({...address, city: value})}
+                        >
+                          <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none focus:ring-0">
+                            <SelectValue placeholder="Escolha a cidade" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-none shadow-2xl">
+                            {CITIES.map((city) => (
+                              <SelectItem key={city} value={city} className="rounded-xl font-medium focus:bg-primary/10 focus:text-primary">
+                                {city}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
@@ -339,7 +365,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               </div>
             </div>
           ) : (
-            /* Step: Payment Selection - Animation slide-in-from-bottom */
+            /* Step: Payment Selection */
             <div className="py-4 space-y-6 animate-in slide-in-from-bottom duration-500 fill-mode-both">
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
@@ -383,7 +409,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">
                   {paymentType === 'online' ? 'Métodos Online' : 'Métodos na Entrega'}
                 </h3>
-                {/* Animation: horizontal "running" effect using key to re-trigger */}
                 <div 
                   key={paymentType} 
                   className="animate-in fade-in slide-in-from-right-10 duration-500 fill-mode-both"
