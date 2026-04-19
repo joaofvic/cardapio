@@ -252,7 +252,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               </div>
             </div>
           ) : (
-            /* Step: Payment Selection - Animation changed to slide-in-from-bottom */
+            /* Step: Payment Selection - Animation slide-in-from-bottom */
             <div className="py-4 space-y-6 animate-in slide-in-from-bottom duration-500 fill-mode-both">
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
