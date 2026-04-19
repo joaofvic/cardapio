@@ -90,6 +90,13 @@ export default function HarvestBitesApp() {
     }
   };
 
+  const handleProfileClick = () => {
+    toast({
+      title: "Perfil do Usuário",
+      description: "Funcionalidade de perfil em breve!",
+    });
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
       {/* City Selection Logic */}
@@ -111,10 +118,15 @@ export default function HarvestBitesApp() {
             <Bell size={20} />
             <span className="absolute top-3 right-3 w-2 h-2 bg-secondary rounded-full border-2 border-white" />
           </button>
-          <Avatar className="w-10 h-10 rounded-2xl border border-primary/20 overflow-hidden">
-            <AvatarImage src="https://picsum.photos/seed/user123/100/100" alt="Perfil do Cliente" />
-            <AvatarFallback className="bg-primary/10 text-primary font-bold rounded-2xl text-xs">HB</AvatarFallback>
-          </Avatar>
+          <button 
+            onClick={handleProfileClick}
+            className="rounded-2xl border border-primary/20 overflow-hidden hover:opacity-80 transition-all hover:scale-105 active:scale-95"
+          >
+            <Avatar className="w-10 h-10 rounded-2xl border-none">
+              <AvatarImage src="https://picsum.photos/seed/user123/100/100" alt="Perfil do Cliente" />
+              <AvatarFallback className="bg-primary/10 text-primary font-bold rounded-2xl text-xs">HB</AvatarFallback>
+            </Avatar>
+          </button>
         </div>
       </header>
 
