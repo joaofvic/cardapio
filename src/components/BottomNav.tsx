@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Home, UtensilsCrossed, ShoppingCart } from "lucide-react";
@@ -25,25 +26,27 @@ export function BottomNav({ activeTab, onTabChange, cartCount }: BottomNavProps)
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="relative flex flex-col items-center gap-1 group"
+            className="relative flex flex-col items-center gap-1 group outline-none"
           >
             <div className={cn(
-              "p-2 rounded-xl transition-all duration-300",
-              isActive ? "bg-primary text-white" : "text-muted-foreground group-hover:bg-muted"
+              "p-2 rounded-xl transition-all duration-300 ease-out",
+              isActive 
+                ? "bg-primary text-white scale-110 shadow-lg shadow-primary/20" 
+                : "text-muted-foreground group-hover:bg-muted group-active:scale-95"
             )}>
               <Icon size={24} className={cn(
                 "transition-transform duration-300",
-                isActive && "scale-110"
+                isActive && "animate-in zoom-in-75"
               )} />
             </div>
             <span className={cn(
-              "text-[10px] font-medium transition-colors duration-300",
+              "text-[10px] font-bold transition-colors duration-300 uppercase tracking-tighter",
               isActive ? "text-primary" : "text-muted-foreground"
             )}>
               {tab.label}
             </span>
             {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white">
+              <span className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in">
                 {tab.badge}
               </span>
             )}
