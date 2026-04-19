@@ -25,7 +25,8 @@ import {
   Smartphone,
   QrCode,
   Wallet,
-  Ticket
+  Ticket,
+  Truck
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -45,9 +46,11 @@ interface CartSheetProps {
 }
 
 type CheckoutStep = 'cart' | 'payment';
+type PaymentType = 'online' | 'delivery';
 
 export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartSheetProps) {
   const [step, setStep] = useState<CheckoutStep>('cart');
+  const [paymentType, setPaymentType] = useState<PaymentType>('online');
   const [isNotHome, setIsNotHome] = useState(false);
   const [locationCaptured, setLocationCaptured] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string>("");
@@ -110,13 +113,19 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     : locationCaptured;
 
   const paymentMethods = [
-    { id: 'pix', label: 'PIX', icon: QrCode },
-    { id: 'card', label: 'Cartão', icon: CreditCard },
-    { id: 'cash', label: 'Dinheiro', icon: Banknote },
-    { id: 'apple', label: 'Apple Pay', icon: Smartphone },
-    { id: 'nupay', label: 'NuPay', icon: Wallet },
-    { id: 'google', label: 'Google Pay', icon: Smartphone },
+    // Online methods
+    { id: 'pix', label: 'PIX (Online)', icon: QrCode, type: 'online' },
+    { id: 'card_online', label: 'Cartão de Crédito (App)', icon: CreditCard, type: 'online' },
+    { id: 'apple', label: 'Apple Pay', icon: Smartphone, type: 'online' },
+    { id: 'google', label: 'Google Pay', icon: Smartphone, type: 'online' },
+    { id: 'nupay', label: 'NuPay', icon: Wallet, type: 'online' },
+    
+    // Delivery methods
+    { id: 'card_machine', label: 'Cartão na Maquininha', icon: CreditCard, type: 'delivery' },
+    { id: 'cash', label: 'Dinheiro (na entrega)', icon: Banknote, type: 'delivery' },
   ];
+
+  const filteredMethods = paymentMethods.filter(m => m.type === paymentType);
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -315,14 +324,49 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
               </div>
 
+              {/* Payment Type Selection */}
               <div className="space-y-4">
-                <h3 className="font-bold text-lg">Escolha como pagar</h3>
+                <h3 className="font-bold text-lg">Como deseja pagar?</h3>
+                <div className="flex p-1 bg-muted rounded-2xl">
+                  <button 
+                    onClick={() => {
+                      setPaymentType('online');
+                      setSelectedPayment("");
+                    }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all",
+                      paymentType === 'online' ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Smartphone size={18} />
+                    Pagar Online
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setPaymentType('delivery');
+                      setSelectedPayment("");
+                    }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all",
+                      paymentType === 'delivery' ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Truck size={18} />
+                    Na Entrega
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">
+                  {paymentType === 'online' ? 'Métodos Online' : 'Métodos na Entrega'}
+                </h3>
                 <RadioGroup 
                   value={selectedPayment} 
                   onValueChange={setSelectedPayment}
                   className="grid grid-cols-1 gap-3"
                 >
-                  {paymentMethods.map((method) => (
+                  {filteredMethods.map((method) => (
                     <Label
                       key={method.id}
                       htmlFor={method.id}
