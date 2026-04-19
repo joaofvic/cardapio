@@ -1,8 +1,7 @@
-
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Bell } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Bell, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -12,17 +11,41 @@ import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { IdentificationDialog } from "@/components/IdentificationDialog";
+
+export type UserProfile = {
+  name: string;
+  phone: string;
+  address?: {
+    street: string;
+    number: string;
+    neighborhood: string;
+    city: string;
+    complement?: string;
+  };
+};
 
 export default function HarvestBitesApp() {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('menu');
-  const [browsingHistory, setBrowsingHistory] = useState<string[]>([]);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isIdDialogOpen, setIsIdDialogOpen] = useState(false);
+  
   const { toast } = useToast();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('harvest_bites_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    } else {
+      setIsIdDialogOpen(true);
+    }
+  }, []);
 
   const categories = ['All', 'Chicken', 'Beef', 'Veggie'];
 
@@ -67,9 +90,6 @@ export default function HarvestBitesApp() {
 
   const handleOpenDetails = (meal: Meal) => {
     setSelectedMeal(meal);
-    if (!browsingHistory.includes(meal.name)) {
-      setBrowsingHistory(prev => [meal.name, ...prev].slice(0, 5));
-    }
   };
 
   const handleTabChange = (tabId: string) => {
@@ -82,9 +102,16 @@ export default function HarvestBitesApp() {
   };
 
   const handleProfileClick = () => {
+    setIsIdDialogOpen(true);
+  };
+
+  const handleIdentifyUser = (profile: UserProfile) => {
+    setUser(profile);
+    localStorage.setItem('harvest_bites_user', JSON.stringify(profile));
+    setIsIdDialogOpen(false);
     toast({
-      title: "Perfil do Usuário",
-      description: "Funcionalidade de perfil em breve!",
+      title: "Identificado!",
+      description: `Olá, ${profile.name.split(' ')[0]}!`,
     });
   };
 
@@ -108,28 +135,28 @@ export default function HarvestBitesApp() {
             className="rounded-2xl border border-primary/20 overflow-hidden hover:opacity-80 transition-all hover:scale-105 active:scale-95"
           >
             <Avatar className="w-10 h-10 rounded-2xl border-none">
-              <AvatarImage src="https://picsum.photos/seed/user123/100/100" alt="Perfil do Cliente" />
-              <AvatarFallback className="bg-primary/10 text-primary font-bold rounded-2xl text-xs">HB</AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-primary font-bold rounded-2xl text-xs">
+                {user ? user.name.substring(0, 2).toUpperCase() : <User size={16} />}
+              </AvatarFallback>
             </Avatar>
           </button>
         </div>
       </header>
 
-      {/* Animated Page Content Wrapper */}
-      <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
+      {/* Main Content */}
+      <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
         {/* Search and Filter */}
         <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <Input 
               className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary"
-              placeholder="Buscar pratos ou ingredientes..."
+              placeholder="Buscar pratos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          {/* Categories */}
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             {categories.map((cat) => (
               <button
@@ -147,15 +174,11 @@ export default function HarvestBitesApp() {
           </div>
         </div>
 
-        {/* Main Content */}
         <main className="mt-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-black text-foreground">
               {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${activeCategory}`}
             </h2>
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              {filteredMeals.length} ITENS
-            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -172,6 +195,13 @@ export default function HarvestBitesApp() {
       </div>
 
       {/* Dialogs and Sheets */}
+      <IdentificationDialog 
+        isOpen={isIdDialogOpen}
+        onClose={() => user && setIsIdDialogOpen(false)}
+        onIdentify={handleIdentifyUser}
+        initialUser={user || undefined}
+      />
+
       <MealDetailsDialog 
         meal={selectedMeal}
         isOpen={!!selectedMeal}
@@ -183,11 +213,11 @@ export default function HarvestBitesApp() {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         items={cartItems}
+        user={user}
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}
       />
 
-      {/* Bottom Nav */}
       <BottomNav 
         activeTab={activeTab} 
         onTabChange={handleTabChange} 

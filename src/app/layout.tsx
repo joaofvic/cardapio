@@ -1,10 +1,10 @@
-
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
+import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'Harvest Bites | Chef-Curated Meals',
-  description: 'Fuel your lifestyle with fresh, healthy, and high-protein chef-curated meals.',
+  title: 'Harvest Bites | Refeições Saudáveis',
+  description: 'Refeições gourmet preparadas pelo chef e prontas para você.',
 };
 
 export default function RootLayout({
@@ -13,14 +13,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased min-h-screen pb-20">
-        {children}
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
       </body>
     </html>
   );

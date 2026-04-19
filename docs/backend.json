@@ -1,0 +1,40 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about the customer, including their name, phone, and saved address.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The customer's full name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The customer's phone number, used as a unique identifier."
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" },
+            "number": { "type": "string" },
+            "neighborhood": { "type": "string" },
+            "city": { "type": "string", "default": "São Miguel - RN" },
+            "complement": { "type": "string" }
+          }
+        }
+      },
+      "required": ["name", "phone"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/users/{phoneNumber}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile information indexed by their phone number."
+    }
+  }
+}
