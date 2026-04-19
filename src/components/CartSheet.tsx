@@ -73,7 +73,9 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
         setLocationCaptured(true);
-        setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
+        if (!isNotHome) {
+          setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
+        }
       }, (error) => {
         console.error("Error getting location:", error);
       });
@@ -188,24 +190,22 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                   <h3 className="font-bold text-lg">Local de Entrega</h3>
                 </div>
                 
-                {!isNotHome && (
-                  <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      type="button"
-                      className={cn(
-                        "w-full rounded-xl h-12 flex items-center gap-2 font-bold shadow-sm transition-all hover:scale-[1.01]",
-                        locationCaptured 
-                          ? "bg-primary/10 border-primary text-primary" 
-                          : "border-primary text-primary hover:bg-primary/5"
-                      )}
-                      onClick={handleGetLocation}
-                    >
-                      {locationCaptured ? <CheckCircle2 size={18} /> : <MapPin size={18} />}
-                      {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
-                    </Button>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    type="button"
+                    className={cn(
+                      "w-full rounded-xl h-12 flex items-center gap-2 font-bold shadow-sm transition-all hover:scale-[1.01]",
+                      locationCaptured 
+                        ? "bg-primary/10 border-primary text-primary" 
+                        : "border-primary text-primary hover:bg-primary/5"
+                    )}
+                    onClick={handleGetLocation}
+                  >
+                    {locationCaptured ? <CheckCircle2 size={18} /> : <MapPin size={18} />}
+                    {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
+                  </Button>
+                </div>
 
                 <div className="flex items-center space-x-2 px-1 pt-2">
                   <Checkbox 
@@ -357,3 +357,4 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     </Sheet>
   );
 }
+
