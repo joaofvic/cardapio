@@ -1,7 +1,8 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Bell } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Bell, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightSection } from "@/components/SpotlightSection";
@@ -14,6 +15,7 @@ import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 
 export default function HarvestBitesApp() {
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -23,7 +25,13 @@ export default function HarvestBitesApp() {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [userCity, setUserCity] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const savedCity = localStorage.getItem("harvest_bites_city");
+    if (savedCity) setUserCity(savedCity);
+  }, []);
 
   const categories = ['All', 'Chicken', 'Beef', 'Veggie'];
 
@@ -45,8 +53,8 @@ export default function HarvestBitesApp() {
       return [...prev, { ...meal, quantity: 1 }];
     });
     toast({
-      title: "Added to Basket",
-      description: `${meal.name} is ready for checkout.`,
+      title: "Adicionado à Cesta",
+      description: `${meal.name} está pronto para checkout.`,
     });
   };
 
@@ -83,11 +91,19 @@ export default function HarvestBitesApp() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
+      {/* City Selection Logic */}
+      <CitySelectionDialog onCitySelect={setUserCity} />
+
       {/* Header */}
       <header className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-primary font-black text-2xl tracking-tighter">HARVEST BITES</h2>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Premium Meal Prep</p>
+          <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => localStorage.removeItem("harvest_bites_city") || window.location.reload()}>
+            <MapPin size={12} className="text-muted-foreground" />
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              {userCity || "Escolha sua cidade"}
+            </span>
+          </div>
         </div>
         <div className="flex gap-3">
           <button className="p-3 bg-white rounded-2xl shadow-sm text-foreground hover:bg-muted transition-colors relative">
@@ -109,7 +125,7 @@ export default function HarvestBitesApp() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
           <Input 
             className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary"
-            placeholder="Search for meals or ingredients..."
+            placeholder="Buscar pratos ou ingredientes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -127,7 +143,7 @@ export default function HarvestBitesApp() {
                 : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
               }`}
             >
-              {cat}
+              {cat === 'All' ? 'Todos' : cat}
             </button>
           ))}
         </div>
@@ -137,10 +153,10 @@ export default function HarvestBitesApp() {
       <main className="mt-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-black text-foreground">
-            {activeCategory === 'All' ? 'Curated Menu' : `${activeCategory} Selections`}
+            {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${activeCategory}`}
           </h2>
           <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            {filteredMeals.length} ITEMS
+            {filteredMeals.length} ITENS
           </span>
         </div>
 
