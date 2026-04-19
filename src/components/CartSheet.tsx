@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CartItem } from "@/app/types/meal";
 import {
   Sheet,
@@ -14,10 +15,13 @@ import {
   Plus, 
   Minus, 
   Trash2, 
-  ShoppingBag 
+  ShoppingBag,
+  MapPin 
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -28,11 +32,30 @@ interface CartSheetProps {
 }
 
 export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartSheetProps) {
+  const [address, setAddress] = useState({
+    street: '',
+    number: '',
+    neighborhood: '',
+    complement: ''
+  });
+
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const deliveryFee = items.length > 0 ? 9.90 : 0;
   const total = subtotal + deliveryFee;
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+
+  const handleGetLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        // In a real application, you would use reverse geocoding here.
+        // For demonstration, we'll set a placeholder message.
+        setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
+      }, (error) => {
+        console.error("Error getting location:", error);
+      });
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -103,6 +126,73 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Delivery Address Section */}
+              <Separator className="my-6" />
+              <div className="space-y-4 pb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-primary/10 p-1.5 rounded-lg">
+                    <MapPin className="text-primary" size={18} />
+                  </div>
+                  <h3 className="font-bold text-lg">Local de Entrega</h3>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5 h-12 flex items-center gap-2 font-bold"
+                  onClick={handleGetLocation}
+                >
+                  <MapPin size={18} />
+                  Usar minha localização atual
+                </Button>
+
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="col-span-3 space-y-2">
+                    <Label htmlFor="street" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rua / Avenida</Label>
+                    <Input 
+                      id="street" 
+                      placeholder="Nome da rua..." 
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                      value={address.street}
+                      onChange={(e) => setAddress({...address, street: e.target.value})}
+                    />
+                  </div>
+                  <div className="col-span-1 space-y-2">
+                    <Label htmlFor="number" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nº</Label>
+                    <Input 
+                      id="number" 
+                      placeholder="42" 
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                      value={address.number}
+                      onChange={(e) => setAddress({...address, number: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="neighborhood" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bairro</Label>
+                    <Input 
+                      id="neighborhood" 
+                      placeholder="Ex: Centro" 
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                      value={address.neighborhood}
+                      onChange={(e) => setAddress({...address, neighborhood: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="complement" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Complemento</Label>
+                    <Input 
+                      id="complement" 
+                      placeholder="Apto, bloco..." 
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                      value={address.complement}
+                      onChange={(e) => setAddress({...address, complement: e.target.value})}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
