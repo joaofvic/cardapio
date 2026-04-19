@@ -34,25 +34,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-const CITIES = [
-  "São Miguel - RN",
-  "Coronel João Pessoa - RN",
-  "Dr. Severiano - RN",
-  "Encanto - RN",
-  "Pau dos Ferros - RN",
-  "Ereré - CE",
-  "Pereiro - CE"
-];
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -77,7 +60,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     street: '',
     number: '',
     neighborhood: '',
-    city: '',
+    city: 'São Miguel - RN',
     complement: ''
   });
   const { toast } = useToast();
@@ -127,7 +110,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   };
 
   const isLocationValid = isNotHome 
-    ? (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '' && address.city.trim() !== '' && address.street !== 'Localização atual capturada')
+    ? (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '')
     : locationCaptured;
 
   const paymentMethods = [
@@ -311,21 +294,11 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Cidade</Label>
-                        <Select 
-                          value={address.city} 
-                          onValueChange={(value) => setAddress({...address, city: value})}
-                        >
-                          <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none focus:ring-0">
-                            <SelectValue placeholder="Escolha a cidade" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-2xl border-none shadow-2xl">
-                            {CITIES.map((city) => (
-                              <SelectItem key={city} value={city} className="rounded-xl font-medium focus:bg-primary/10 focus:text-primary">
-                                {city}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input 
+                          value={address.city}
+                          disabled
+                          className="h-12 rounded-xl bg-muted/10 border-none font-bold text-foreground/50 opacity-100"
+                        />
                       </div>
                     </div>
                   </div>
