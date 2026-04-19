@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CartItem } from "@/app/types/meal";
 import {
   Sheet,
@@ -17,13 +17,20 @@ import {
   Trash2, 
   ShoppingBag,
   MapPin,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  QrCode,
+  Wallet
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 interface CartSheetProps {
@@ -34,15 +41,26 @@ interface CartSheetProps {
   onRemove: (id: string) => void;
 }
 
+type CheckoutStep = 'cart' | 'payment';
+
 export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartSheetProps) {
+  const [step, setStep] = useState<CheckoutStep>('cart');
   const [isNotHome, setIsNotHome] = useState(false);
   const [locationCaptured, setLocationCaptured] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<string>("");
   const [address, setAddress] = useState({
     street: '',
     number: '',
     neighborhood: '',
     complement: ''
   });
+
+  // Reset step when opening/closing
+  useEffect(() => {
+    if (!isOpen) {
+      setTimeout(() => setStep('cart'), 300);
+    }
+  }, [isOpen]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const deliveryFee = items.length > 0 ? 9.90 : 0;
@@ -54,7 +72,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
         setLocationCaptured(true);
-        // Reset manual fields if we capture GPS
         setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
       }, (error) => {
         console.error("Error getting location:", error);
@@ -62,23 +79,41 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     }
   };
 
-  // Validation logic: 
-  // If NOT home, must have street and number.
-  // If at home, must have captured GPS location.
   const isLocationValid = isNotHome 
     ? (address.street.trim() !== '' && address.number.trim() !== '' && address.street !== 'Localização atual capturada')
     : locationCaptured;
 
+  const paymentMethods = [
+    { id: 'pix', label: 'PIX', icon: QrCode },
+    { id: 'card', label: 'Cartão', icon: CreditCard },
+    { id: 'cash', label: 'Dinheiro', icon: Banknote },
+    { id: 'apple', label: 'Apple Pay', icon: Smartphone },
+    { id: 'nupay', label: 'NuPay', icon: Wallet },
+    { id: 'google', label: 'Google Pay', icon: Smartphone },
+  ];
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0">
+      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden">
+        
+        {/* Header - Changes based on step */}
         <div className="p-6 pb-2">
           <SheetHeader>
             <div className="flex items-center gap-2 mb-2">
+              {step === 'payment' && (
+                <button 
+                  onClick={() => setStep('cart')}
+                  className="p-2 hover:bg-muted rounded-full transition-colors -ml-2"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+              )}
               <div className="bg-primary/10 p-2 rounded-xl">
-                <ShoppingBag className="text-primary" size={20} />
+                {step === 'cart' ? <ShoppingBag className="text-primary" size={20} /> : <CreditCard className="text-primary" size={20} />}
               </div>
-              <SheetTitle className="text-2xl font-black">Sua Cesta</SheetTitle>
+              <SheetTitle className="text-2xl font-black">
+                {step === 'cart' ? 'Sua Cesta' : 'Pagamento'}
+              </SheetTitle>
             </div>
           </SheetHeader>
         </div>
@@ -99,8 +134,9 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 Ver Cardápio
               </Button>
             </div>
-          ) : (
+          ) : step === 'cart' ? (
             <div className="space-y-6 py-4">
+              {/* Item List */}
               <div className="space-y-4">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4 group">
@@ -151,7 +187,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                   <h3 className="font-bold text-lg">Local de Entrega</h3>
                 </div>
                 
-                {/* Priority: Use current location button */}
                 {!isNotHome && (
                   <div className="space-y-2">
                     <Button 
@@ -168,24 +203,17 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                       {locationCaptured ? <CheckCircle2 size={18} /> : <MapPin size={18} />}
                       {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
                     </Button>
-                    {locationCaptured && (
-                      <p className="text-[10px] text-center text-primary font-bold">Sua localização GPS será usada para a entrega.</p>
-                    )}
                   </div>
                 )}
 
-                {/* Manual Address Toggle */}
                 <div className="flex items-center space-x-2 px-1 pt-2">
                   <Checkbox 
                     id="not-home" 
                     checked={isNotHome} 
                     onCheckedChange={(checked) => {
                       setIsNotHome(!!checked);
-                      if (!!checked) {
-                        // If switching to manual, clear the "captured" indicator if it was just the string
-                        if (address.street === 'Localização atual capturada') {
-                          setAddress(prev => ({ ...prev, street: '' }));
-                        }
+                      if (!!checked && address.street === 'Localização atual capturada') {
+                        setAddress(prev => ({ ...prev, street: '' }));
                       }
                     }}
                   />
@@ -197,51 +225,25 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                   </Label>
                 </div>
 
-                {/* Conditional Manual Address Fields */}
                 {isNotHome && (
                   <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="grid grid-cols-4 gap-3">
                       <div className="col-span-3 space-y-2">
-                        <Label htmlFor="street" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rua / Avenida</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rua / Avenida</Label>
                         <Input 
-                          id="street" 
                           placeholder="Nome da rua..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                          className="h-12 rounded-xl bg-muted/30 border-none"
                           value={address.street === 'Localização atual capturada' ? '' : address.street}
                           onChange={(e) => setAddress({...address, street: e.target.value})}
                         />
                       </div>
                       <div className="col-span-1 space-y-2">
-                        <Label htmlFor="number" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nº</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nº</Label>
                         <Input 
-                          id="number" 
                           placeholder="42" 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                          className="h-12 rounded-xl bg-muted/30 border-none"
                           value={address.number}
                           onChange={(e) => setAddress({...address, number: e.target.value})}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="neighborhood" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bairro</Label>
-                        <Input 
-                          id="neighborhood" 
-                          placeholder="Ex: Centro" 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                          value={address.neighborhood}
-                          onChange={(e) => setAddress({...address, neighborhood: e.target.value})}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="complement" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Complemento</Label>
-                        <Input 
-                          id="complement" 
-                          placeholder="Apto, bloco..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                          value={address.complement}
-                          onChange={(e) => setAddress({...address, complement: e.target.value})}
                         />
                       </div>
                     </div>
@@ -249,9 +251,52 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 )}
               </div>
             </div>
+          ) : (
+            /* Step: Payment Selection */
+            <div className="py-4 space-y-6 animate-in slide-in-from-right duration-300">
+              <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
+                <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">Escolha como pagar</h3>
+                <RadioGroup 
+                  value={selectedPayment} 
+                  onValueChange={setSelectedPayment}
+                  className="grid grid-cols-1 gap-3"
+                >
+                  {paymentMethods.map((method) => (
+                    <Label
+                      key={method.id}
+                      htmlFor={method.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
+                        selectedPayment === method.id 
+                          ? "border-primary bg-primary/5 shadow-sm" 
+                          : "border-muted bg-white hover:border-primary/30"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-2 rounded-xl",
+                          selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                        )}>
+                          <method.icon size={20} />
+                        </div>
+                        <span className="font-bold">{method.label}</span>
+                      </div>
+                      <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
+                      {selectedPayment === method.id && <CheckCircle2 size={20} className="text-primary" />}
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+            </div>
           )}
         </ScrollArea>
 
+        {/* Footer */}
         {items.length > 0 && (
           <div className="p-6 bg-muted/30 border-t rounded-t-[2rem]">
             <div className="space-y-3 mb-6">
@@ -269,22 +314,40 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 <span className="font-black text-primary">{formatCurrency(total)}</span>
               </div>
             </div>
+            
             <SheetFooter>
-              <Button 
-                disabled={!isLocationValid}
-                className={cn(
-                  "w-full h-14 rounded-full text-lg font-bold shadow-xl transition-all",
-                  isLocationValid 
-                    ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:scale-[1.02]" 
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
-                )}
-              >
-                Ir para Pagamento
-              </Button>
-              {!isLocationValid && (
-                <p className="text-[10px] text-center w-full mt-2 text-muted-foreground font-medium">
-                  Forneça sua localização para continuar
-                </p>
+              {step === 'cart' ? (
+                <div className="w-full">
+                  <Button 
+                    disabled={!isLocationValid}
+                    onClick={() => setStep('payment')}
+                    className={cn(
+                      "w-full h-14 rounded-full text-lg font-bold shadow-xl transition-all",
+                      isLocationValid 
+                        ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:scale-[1.02]" 
+                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                    )}
+                  >
+                    Ir para Pagamento
+                  </Button>
+                  {!isLocationValid && (
+                    <p className="text-[10px] text-center w-full mt-2 text-muted-foreground font-medium uppercase tracking-widest">
+                      Forneça sua localização para continuar
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <Button 
+                  disabled={!selectedPayment}
+                  className={cn(
+                    "w-full h-14 rounded-full text-lg font-bold shadow-xl transition-all",
+                    selectedPayment 
+                      ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:scale-[1.02]" 
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  )}
+                >
+                  Finalizar Pedido
+                </Button>
               )}
             </SheetFooter>
           </div>
