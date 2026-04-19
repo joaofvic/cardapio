@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Search, Bell, MapPin } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { SpotlightSection } from "@/components/SpotlightSection";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -15,7 +14,6 @@ import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function HarvestBitesApp() {
@@ -26,13 +24,7 @@ export default function HarvestBitesApp() {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [userCity, setUserCity] = useState<string | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const savedCity = localStorage.getItem("harvest_bites_city");
-    if (savedCity) setUserCity(savedCity);
-  }, []);
 
   const categories = ['All', 'Chicken', 'Beef', 'Veggie'];
 
@@ -101,19 +93,13 @@ export default function HarvestBitesApp() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
-      {/* City Selection Logic */}
-      <CitySelectionDialog onCitySelect={setUserCity} />
-
       {/* Header */}
       <header className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-primary font-black text-2xl tracking-tighter">HARVEST BITES</h2>
-          <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => localStorage.removeItem("harvest_bites_city") || window.location.reload()}>
-            <MapPin size={12} className="text-muted-foreground" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {userCity || "Escolha sua cidade"}
-            </span>
-          </div>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            Refeições Saudáveis & Prontas
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="p-3 bg-white rounded-2xl shadow-sm text-foreground hover:bg-muted transition-colors relative">
