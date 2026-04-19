@@ -361,8 +361,11 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">
                   {paymentType === 'online' ? 'Métodos Online' : 'Métodos na Entrega'}
                 </h3>
-                {/* Key triggers re-animation when paymentType changes */}
-                <div key={paymentType} className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both">
+                {/* Animation: horizontal "running" effect using key to re-trigger */}
+                <div 
+                  key={paymentType} 
+                  className="animate-in fade-in slide-in-from-right-10 duration-500 fill-mode-both"
+                >
                   <RadioGroup 
                     value={selectedPayment} 
                     onValueChange={setSelectedPayment}
