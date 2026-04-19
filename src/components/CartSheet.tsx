@@ -16,13 +16,15 @@ import {
   Minus, 
   Trash2, 
   ShoppingBag,
-  MapPin 
+  MapPin,
+  CheckCircle2
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ interface CartSheetProps {
 
 export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartSheetProps) {
   const [isNotHome, setIsNotHome] = useState(false);
+  const [locationCaptured, setLocationCaptured] = useState(false);
   const [address, setAddress] = useState({
     street: '',
     number: '',
@@ -50,12 +53,21 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
+        setLocationCaptured(true);
+        // Reset manual fields if we capture GPS
         setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
       }, (error) => {
         console.error("Error getting location:", error);
       });
     }
   };
+
+  // Validation logic: 
+  // If NOT home, must have street and number.
+  // If at home, must have captured GPS location.
+  const isLocationValid = isNotHome 
+    ? (address.street.trim() !== '' && address.number.trim() !== '' && address.street !== 'Localização atual capturada')
+    : locationCaptured;
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -140,22 +152,42 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 </div>
                 
                 {/* Priority: Use current location button */}
-                <Button 
-                  variant="outline" 
-                  type="button"
-                  className="w-full rounded-xl border-primary text-primary hover:bg-primary/5 h-12 flex items-center gap-2 font-bold shadow-sm transition-all hover:scale-[1.01]"
-                  onClick={handleGetLocation}
-                >
-                  <MapPin size={18} />
-                  Usar minha localização atual
-                </Button>
+                {!isNotHome && (
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      type="button"
+                      className={cn(
+                        "w-full rounded-xl h-12 flex items-center gap-2 font-bold shadow-sm transition-all hover:scale-[1.01]",
+                        locationCaptured 
+                          ? "bg-primary/10 border-primary text-primary" 
+                          : "border-primary text-primary hover:bg-primary/5"
+                      )}
+                      onClick={handleGetLocation}
+                    >
+                      {locationCaptured ? <CheckCircle2 size={18} /> : <MapPin size={18} />}
+                      {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
+                    </Button>
+                    {locationCaptured && (
+                      <p className="text-[10px] text-center text-primary font-bold">Sua localização GPS será usada para a entrega.</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Manual Address Toggle */}
                 <div className="flex items-center space-x-2 px-1 pt-2">
                   <Checkbox 
                     id="not-home" 
                     checked={isNotHome} 
-                    onCheckedChange={(checked) => setIsNotHome(!!checked)}
+                    onCheckedChange={(checked) => {
+                      setIsNotHome(!!checked);
+                      if (!!checked) {
+                        // If switching to manual, clear the "captured" indicator if it was just the string
+                        if (address.street === 'Localização atual capturada') {
+                          setAddress(prev => ({ ...prev, street: '' }));
+                        }
+                      }
+                    }}
                   />
                   <Label 
                     htmlFor="not-home" 
@@ -175,7 +207,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                           id="street" 
                           placeholder="Nome da rua..." 
                           className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                          value={address.street}
+                          value={address.street === 'Localização atual capturada' ? '' : address.street}
                           onChange={(e) => setAddress({...address, street: e.target.value})}
                         />
                       </div>
@@ -238,9 +270,22 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               </div>
             </div>
             <SheetFooter>
-              <Button className="w-full h-14 rounded-full text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
-                Finalizar Pedido
+              <Button 
+                disabled={!isLocationValid}
+                className={cn(
+                  "w-full h-14 rounded-full text-lg font-bold shadow-xl transition-all",
+                  isLocationValid 
+                    ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:scale-[1.02]" 
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                Ir para Pagamento
               </Button>
+              {!isLocationValid && (
+                <p className="text-[10px] text-center w-full mt-2 text-muted-foreground font-medium">
+                  Forneça sua localização para continuar
+                </p>
+              )}
             </SheetFooter>
           </div>
         )}
