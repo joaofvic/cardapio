@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -51,12 +52,14 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   const [locationCaptured, setLocationCaptured] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string>("");
   const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState("");
   const [address, setAddress] = useState({
     street: '',
     number: '',
     neighborhood: '',
     complement: ''
   });
+  const { toast } = useToast();
 
   // Reset step when opening/closing
   useEffect(() => {
@@ -66,10 +69,28 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   }, [isOpen]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
   const deliveryFee = items.length > 0 ? 9.90 : 0;
-  const total = subtotal + deliveryFee;
+  const total = subtotal + deliveryFee - discountAmount;
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+
+  const handleApplyCoupon = () => {
+    if (couponCode.toUpperCase() === 'ADAS') {
+      setAppliedCoupon('ADAS');
+      toast({
+        title: "Cupom Aplicado!",
+        description: "Você ganhou 50% de desconto no subtotal.",
+      });
+    } else {
+      setAppliedCoupon("");
+      toast({
+        variant: "destructive",
+        title: "Cupom Inválido",
+        description: "O código informado não é válido ou expirou.",
+      });
+    }
+  };
 
   const handleGetLocation = () => {
     if (navigator.geolocation) {
@@ -272,10 +293,18 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                   />
-                  <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all active:scale-95">
+                  <button 
+                    onClick={handleApplyCoupon}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all active:scale-95"
+                  >
                     APLICAR
                   </button>
                 </div>
+                {appliedCoupon && (
+                  <p className="text-xs font-bold text-primary flex items-center gap-1 animate-in fade-in duration-300">
+                    <CheckCircle2 size={12} /> Cupom {appliedCoupon} aplicado com sucesso!
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -331,6 +360,12 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-bold">{formatCurrency(subtotal)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-primary font-bold">
+                  <span>Desconto (50%)</span>
+                  <span>-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Taxa de Entrega</span>
                 <span className="font-bold">{formatCurrency(deliveryFee)}</span>
