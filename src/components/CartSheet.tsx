@@ -65,7 +65,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   });
   const { toast } = useToast();
 
-  // Reset step when opening/closing
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => setStep('cart'), 300);
@@ -104,7 +103,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
           setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
         }
       }, (error) => {
-        console.error("Error getting location:", error);
+        // Silently handle location error to avoid developer error overlay
       });
     }
   };
@@ -114,14 +113,11 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     : locationCaptured;
 
   const paymentMethods = [
-    // Online methods
     { id: 'pix', label: 'PIX (Online)', icon: QrCode, type: 'online' },
     { id: 'card_online', label: 'Cartão de Crédito (App)', icon: CreditCard, type: 'online' },
     { id: 'apple', label: 'Apple Pay', icon: Smartphone, type: 'online' },
     { id: 'google', label: 'Google Pay', icon: Smartphone, type: 'online' },
     { id: 'nupay', label: 'NuPay', icon: Wallet, type: 'online' },
-    
-    // Delivery methods
     { id: 'card_machine', label: 'Cartão na Maquininha', icon: CreditCard, type: 'delivery' },
     { id: 'cash', label: 'Dinheiro (na entrega)', icon: Banknote, type: 'delivery' },
   ];
@@ -131,8 +127,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden">
-        
-        {/* Header - Changes based on step */}
         <div className="p-6 pb-2">
           <SheetHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -172,7 +166,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
             </div>
           ) : step === 'cart' ? (
             <div className="space-y-6 py-4 animate-in fade-in duration-300">
-              {/* Item List */}
               <div className="space-y-4">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4 group">
@@ -214,7 +207,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
 
               <Separator className="my-6" />
 
-              {/* Delivery Section */}
               <div className="space-y-4 pb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-primary/10 p-1.5 rounded-lg">
@@ -308,7 +300,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
 
               <Separator className="my-2" />
 
-              {/* Coupon Section */}
               <div className="space-y-4 pb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-primary/10 p-1.5 rounded-lg">
@@ -339,14 +330,12 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               </div>
             </div>
           ) : (
-            /* Step: Payment Selection */
             <div className="py-4 space-y-6 animate-in slide-in-from-bottom duration-500 fill-mode-both">
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
                 <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
               </div>
 
-              {/* Payment Type Selection */}
               <div className="space-y-4">
                 <h3 className="font-bold text-lg">Como deseja pagar?</h3>
                 <div className="flex p-1 bg-muted rounded-2xl">
@@ -423,7 +412,6 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
           )}
         </ScrollArea>
 
-        {/* Footer */}
         {items.length > 0 && (
           <div className="p-6 bg-muted/30 border-t rounded-t-[2rem]">
             <div className="space-y-3 mb-6">
