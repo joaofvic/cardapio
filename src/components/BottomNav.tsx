@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, UtensilsCrossed, ShoppingCart } from "lucide-react";
+import { UtensilsCrossed, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -12,13 +12,12 @@ interface BottomNavProps {
 
 export function BottomNav({ activeTab, onTabChange, cartCount }: BottomNavProps) {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Início' },
     { id: 'menu', icon: UtensilsCrossed, label: 'Cardápio' },
     { id: 'cart', icon: ShoppingCart, label: 'Cesta', badge: cartCount },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-t border-border px-6 py-3 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-t border-border px-6 py-3 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;

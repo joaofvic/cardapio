@@ -4,11 +4,9 @@
 import { useState, useMemo } from "react";
 import { Search, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { SpotlightSection } from "@/components/SpotlightSection";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
 import { MealCard } from "@/components/MealCard";
-import { RecommendationSection } from "@/components/RecommendationSection";
 import { BottomNav } from "@/components/BottomNav";
 import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
@@ -19,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export default function HarvestBitesApp() {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('menu');
   const [browsingHistory, setBrowsingHistory] = useState<string[]>([]);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -79,7 +77,6 @@ export default function HarvestBitesApp() {
       setIsCartOpen(true);
     } else {
       setActiveTab(tabId);
-      // Scroll to top when changing tab
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -120,9 +117,6 @@ export default function HarvestBitesApp() {
 
       {/* Animated Page Content Wrapper */}
       <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
-        {/* Hero Spotlight */}
-        {activeTab === 'home' && <SpotlightSection />}
-
         {/* Search and Filter */}
         <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
           <div className="relative mb-6">
@@ -174,15 +168,6 @@ export default function HarvestBitesApp() {
               />
             ))}
           </div>
-
-          {/* AI Recommendations */}
-          {activeTab === 'home' && (
-            <RecommendationSection 
-              browsingHistory={browsingHistory} 
-              onAddToCart={handleAddToCart}
-              onOpenDetails={handleOpenDetails}
-            />
-          )}
         </main>
       </div>
 
