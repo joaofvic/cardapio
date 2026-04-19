@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CartItem } from "@/app/types/meal";
 import { UserProfile } from "@/app/page";
 import {
@@ -29,8 +29,7 @@ import {
   Ticket,
   User,
   Phone,
-  Loader2,
-  ChevronDown
+  Loader2
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -65,6 +64,9 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
   
+  // Ref to scroll to top when changing steps
+  const scrollAreaTopRef = useRef<HTMLDivElement>(null);
+
   // User identification states
   const [phone, setPhone] = useState(user?.phone || "");
   const [name, setName] = useState(user?.name || "");
@@ -104,6 +106,13 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
       setIsNotHome(true);
     }
   }, [user, isOpen]);
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (scrollAreaTopRef.current) {
+      scrollAreaTopRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [step]);
 
   // Auto-lookup logic
   useEffect(() => {
@@ -170,7 +179,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
         if (!isNotHome) {
           setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
         }
-      }, () => {
+      }, (error) => {
         // Silent per guidelines
       });
     }
@@ -245,6 +254,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
         </div>
 
         <ScrollArea className="flex-grow px-6">
+          <div ref={scrollAreaTopRef} className="h-0 w-0" />
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
               <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -357,7 +367,13 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                       </div>
                       <div className="col-span-1 space-y-1">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
-                        <Input placeholder="42" className="h-12 rounded-xl bg-muted/30 border-none" value={address.number} inputMode="numeric" onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})} />
+                        <Input 
+                          placeholder="42" 
+                          className="h-12 rounded-xl bg-muted/30 border-none" 
+                          value={address.number} 
+                          onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
+                          inputMode="numeric"
+                        />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -452,3 +468,4 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
     </Sheet>
   );
 }
+
