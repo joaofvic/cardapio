@@ -60,6 +60,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     street: '',
     number: '',
     neighborhood: '',
+    city: '',
     complement: ''
   });
   const { toast } = useToast();
@@ -109,7 +110,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   };
 
   const isLocationValid = isNotHome 
-    ? (address.street.trim() !== '' && address.number.trim() !== '' && address.street !== 'Localização atual capturada')
+    ? (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '' && address.city.trim() !== '' && address.street !== 'Localização atual capturada')
     : locationCaptured;
 
   const paymentMethods = [
@@ -128,7 +129,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   const filteredMethods = paymentMethods.filter(m => m.type === paymentType);
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet border-none shadow-none open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden">
         
         {/* Header - Changes based on step */}
@@ -277,6 +278,27 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                           className="h-12 rounded-xl bg-muted/30 border-none"
                           value={address.number}
                           onChange={(e) => setAddress({...address, number: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bairro</Label>
+                        <Input 
+                          placeholder="Seu bairro..." 
+                          className="h-12 rounded-xl bg-muted/30 border-none"
+                          value={address.neighborhood}
+                          onChange={(e) => setAddress({...address, neighborhood: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Cidade</Label>
+                        <Input 
+                          placeholder="Sua cidade..." 
+                          className="h-12 rounded-xl bg-muted/30 border-none"
+                          value={address.city}
+                          onChange={(e) => setAddress({...address, city: e.target.value})}
                         />
                       </div>
                     </div>
