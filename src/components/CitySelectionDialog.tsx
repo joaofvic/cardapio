@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,14 +13,13 @@ import { MapPin, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CITIES = [
-  "São Paulo",
-  "Rio de Janeiro",
-  "Belo Horizonte",
-  "Curitiba",
-  "Porto Alegre",
-  "Brasília",
-  "Salvador",
-  "Fortaleza"
+  "São Miguel - RN",
+  "Coronel João Pessoa - RN",
+  "Dr. Severiano - RN",
+  "Encanto - RN",
+  "Pau dos Ferros - RN",
+  "Ereré - CE",
+  "Pereiro - CE"
 ];
 
 interface CitySelectionDialogProps {
