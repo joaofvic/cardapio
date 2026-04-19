@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Bell, Filter } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightSection } from "@/components/SpotlightSection";
@@ -114,9 +113,6 @@ export default function HarvestBitesApp() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors">
-            <Filter size={18} />
-          </button>
         </div>
 
         {/* Categories */}
