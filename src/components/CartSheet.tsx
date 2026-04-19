@@ -26,7 +26,10 @@ import {
   Smartphone,
   QrCode,
   Wallet,
-  Ticket
+  Ticket,
+  User,
+  Phone,
+  Loader2
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -36,7 +39,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 interface CartSheetProps {
@@ -44,6 +47,7 @@ interface CartSheetProps {
   onClose: () => void;
   items: CartItem[];
   user: UserProfile | null;
+  onIdentify: (user: UserProfile) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
 }
@@ -51,7 +55,7 @@ interface CartSheetProps {
 type CheckoutStep = 'cart' | 'payment';
 type PaymentType = 'online' | 'delivery';
 
-export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRemove }: CartSheetProps) {
+export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQuantity, onRemove }: CartSheetProps) {
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [paymentType, setPaymentType] = useState<PaymentType>('online');
   const [isNotHome, setIsNotHome] = useState(false);
@@ -59,6 +63,12 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
   const [selectedPayment, setSelectedPayment] = useState<string>("");
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
+  
+  // User identification states
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [name, setName] = useState(user?.name || "");
+  const [searching, setSearching] = useState(false);
+
   const [address, setAddress] = useState({
     street: '',
     number: '',
@@ -66,22 +76,50 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
     city: 'São Miguel - RN',
     complement: ''
   });
+
   const { toast } = useToast();
   const firestore = useFirestore();
 
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => setStep('cart'), 300);
+    } else {
+      setPhone(user?.phone || "");
+      setName(user?.name || "");
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
-  // Pre-fill address when user is loaded or dialog opens
   useEffect(() => {
     if (user?.address && user.address.street) {
       setAddress(user.address);
       setIsNotHome(true);
     }
   }, [user, isOpen]);
+
+  // Auto-lookup logic
+  useEffect(() => {
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length >= 10 && firestore && !user) {
+      const handleLookup = async () => {
+        if (searching) return;
+        setSearching(true);
+        try {
+          const docRef = doc(firestore, "users", cleanPhone);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            setName(data.name);
+            if (data.address) setAddress(data.address);
+          }
+        } catch (e) {
+          // Silent per guidelines
+        } finally {
+          setSearching(false);
+        }
+      };
+      handleLookup();
+    }
+  }, [phone, firestore, user, searching]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
@@ -115,24 +153,35 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
           setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
         }
       }, () => {
-        // Silent error per guidelines
+        // Handled silently per guidelines
       });
     }
   };
 
-  const isLocationValid = isNotHome 
-    ? (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '')
-    : locationCaptured;
+  const isFormValid = name.trim().length > 2 && phone.replace(/\D/g, "").length >= 10 && (
+    isNotHome 
+      ? (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '')
+      : locationCaptured
+  );
 
   const handleFinalize = async () => {
-    if (!user || !firestore) return;
+    if (!firestore) return;
 
-    // Save address for future lookups
-    const userRef = doc(firestore, "users", user.phone);
-    setDoc(userRef, { ...user, address }, { merge: true })
+    const cleanPhone = phone.replace(/\D/g, "");
+    const userProfile: UserProfile = {
+      name,
+      phone: cleanPhone,
+      address
+    };
+
+    // Save/Update user profile
+    const userRef = doc(firestore, "users", cleanPhone);
+    setDoc(userRef, userProfile, { merge: true })
       .catch((error) => {
-        // Central error handling is active
+        // Handled centrally
       });
+
+    onIdentify(userProfile);
 
     toast({
       title: "Pedido Recebido!",
@@ -194,6 +243,7 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
             </div>
           ) : step === 'cart' ? (
             <div className="space-y-6 py-4 animate-in fade-in duration-300">
+              {/* Items List */}
               <div className="space-y-4">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4 group">
@@ -220,6 +270,46 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
 
               <Separator />
 
+              {/* Identification Integrated */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-primary/10 p-1.5 rounded-lg"><User className="text-primary" size={18} /></div>
+                  <h3 className="font-bold text-lg">Seus Dados</h3>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Telefone (WhatsApp)</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                      <Input 
+                        placeholder="(00) 00000-0000" 
+                        className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold" 
+                        value={phone} 
+                        onChange={(e) => setPhone(e.target.value)}
+                        type="tel"
+                      />
+                      {searching && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-primary" size={16} />}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Seu Nome</Label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                      <Input 
+                        placeholder="Como podemos te chamar?" 
+                        className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold" 
+                        value={name} 
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Delivery Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-primary/10 p-1.5 rounded-lg"><MapPin className="text-primary" size={18} /></div>
@@ -232,35 +322,32 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
                   onClick={handleGetLocation}
                 >
                   <MapPin size={18} />
-                  {locationCaptured ? "Localização Capturada" : "Usar localização atual"}
+                  {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
                 </Button>
 
                 <div className="flex items-center space-x-2 px-1">
                   <Checkbox id="not-home" checked={isNotHome} onCheckedChange={(c) => setIsNotHome(!!c)} />
-                  <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer">Informar endereço completo</Label>
+                  <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer">Não estou em casa (Informar endereço)</Label>
                 </div>
 
                 {isNotHome && (
                   <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="grid grid-cols-4 gap-3">
-                      <div className="col-span-3 space-y-2">
+                      <div className="col-span-3 space-y-1">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua / Avenida</Label>
                         <Input placeholder="Nome da rua..." className="h-12 rounded-xl bg-muted/30 border-none" value={address.street} onChange={(e) => setAddress({...address, street: e.target.value})} />
                       </div>
-                      <div className="col-span-1 space-y-2">
+                      <div className="col-span-1 space-y-1">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
-                        <Input placeholder="42" className="h-12 rounded-xl bg-muted/30 border-none" value={address.number} inputMode="numeric" onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setAddress({...address, number: val});
-                        }} />
+                        <Input placeholder="42" className="h-12 rounded-xl bg-muted/30 border-none" value={address.number} inputMode="numeric" onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})} />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro</Label>
                         <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
                         <Input value="São Miguel - RN" disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
                       </div>
@@ -271,6 +358,7 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
 
               <Separator />
 
+              {/* Coupon Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-primary/10 p-1.5 rounded-lg"><Ticket className="text-primary" size={18} /></div>
@@ -287,11 +375,11 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
             <div className="py-4 space-y-6 animate-in slide-in-from-bottom duration-500 overflow-x-hidden">
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
-                <p className="text-sm text-muted-foreground">O total é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
+                <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
               </div>
 
               <div className="space-y-4">
-                <h3 className="font-bold text-lg">Como deseja pagar?</h3>
+                <h3 className="font-bold text-lg">Escolha como pagar</h3>
                 <div className="flex p-1 bg-muted rounded-2xl">
                   <button onClick={() => {setPaymentType('online'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'online' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Pagar Online</button>
                   <button onClick={() => {setPaymentType('delivery'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'delivery' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Na Entrega</button>
@@ -326,7 +414,7 @@ export function CartSheet({ isOpen, onClose, items, user, onUpdateQuantity, onRe
             </div>
             <SheetFooter>
               {step === 'cart' ? (
-                <Button disabled={!isLocationValid} onClick={() => setStep('payment')} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Ir para Pagamento</Button>
+                <Button disabled={!isFormValid} onClick={() => setStep('payment')} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Ir para Pagamento</Button>
               ) : (
                 <Button disabled={!selectedPayment} onClick={handleFinalize} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Finalizar Pedido</Button>
               )}

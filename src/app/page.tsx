@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -12,7 +13,6 @@ import { CartSheet } from "@/components/CartSheet";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { IdentificationDialog } from "@/components/IdentificationDialog";
 
 export type UserProfile = {
   name: string;
@@ -34,7 +34,6 @@ export default function HarvestBitesApp() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [isIdDialogOpen, setIsIdDialogOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -42,8 +41,6 @@ export default function HarvestBitesApp() {
     const savedUser = localStorage.getItem('harvest_bites_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
-    } else {
-      setIsIdDialogOpen(true);
     }
   }, []);
 
@@ -101,14 +98,9 @@ export default function HarvestBitesApp() {
     }
   };
 
-  const handleProfileClick = () => {
-    setIsIdDialogOpen(true);
-  };
-
   const handleIdentifyUser = (profile: UserProfile) => {
     setUser(profile);
     localStorage.setItem('harvest_bites_user', JSON.stringify(profile));
-    setIsIdDialogOpen(false);
     toast({
       title: "Identificado!",
       description: `Olá, ${profile.name.split(' ')[0]}!`,
@@ -130,16 +122,13 @@ export default function HarvestBitesApp() {
             <Bell size={20} />
             <span className="absolute top-3 right-3 w-2 h-2 bg-secondary rounded-full border-2 border-white" />
           </button>
-          <button 
-            onClick={handleProfileClick}
-            className="rounded-2xl border border-primary/20 overflow-hidden hover:opacity-80 transition-all hover:scale-105 active:scale-95"
-          >
+          <div className="rounded-2xl border border-primary/20 overflow-hidden">
             <Avatar className="w-10 h-10 rounded-2xl border-none">
               <AvatarFallback className="bg-primary/10 text-primary font-bold rounded-2xl text-xs">
                 {user ? user.name.substring(0, 2).toUpperCase() : <User size={16} />}
               </AvatarFallback>
             </Avatar>
-          </button>
+          </div>
         </div>
       </header>
 
@@ -194,14 +183,6 @@ export default function HarvestBitesApp() {
         </main>
       </div>
 
-      {/* Dialogs and Sheets */}
-      <IdentificationDialog 
-        isOpen={isIdDialogOpen}
-        onClose={() => user && setIsIdDialogOpen(false)}
-        onIdentify={handleIdentifyUser}
-        initialUser={user || undefined}
-      />
-
       <MealDetailsDialog 
         meal={selectedMeal}
         isOpen={!!selectedMeal}
@@ -214,6 +195,7 @@ export default function HarvestBitesApp() {
         onClose={() => setIsCartOpen(false)}
         items={cartItems}
         user={user}
+        onIdentify={handleIdentifyUser}
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}
       />
