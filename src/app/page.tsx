@@ -87,6 +87,8 @@ export default function HarvestBitesApp() {
       setIsCartOpen(true);
     } else {
       setActiveTab(tabId);
+      // Scroll to top when changing tab
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -130,68 +132,73 @@ export default function HarvestBitesApp() {
         </div>
       </header>
 
-      {/* Hero Spotlight */}
-      {activeTab === 'home' && <SpotlightSection />}
+      {/* Animated Page Content Wrapper */}
+      <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
+        {/* Hero Spotlight */}
+        {activeTab === 'home' && <SpotlightSection />}
 
-      {/* Search and Filter */}
-      <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-          <Input 
-            className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary"
-            placeholder="Buscar pratos ou ingredientes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* Search and Filter */}
+        <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
+          <div className="relative mb-6">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+            <Input 
+              className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary"
+              placeholder="Buscar pratos ou ingredientes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Categories */}
+          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+                  activeCategory === cat 
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                  : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
+                }`}
+              >
+                {cat === 'All' ? 'Todos' : cat}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Categories */}
-        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
-                activeCategory === cat 
-                ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
-              }`}
-            >
-              {cat === 'All' ? 'Todos' : cat}
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* Main Content */}
+        <main className="mt-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-foreground">
+              {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${activeCategory}`}
+            </h2>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              {filteredMeals.length} ITENS
+            </span>
+          </div>
 
-      {/* Main Content */}
-      <main className="mt-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-black text-foreground">
-            {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${activeCategory}`}
-          </h2>
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            {filteredMeals.length} ITENS
-          </span>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMeals.map((meal) => (
+              <MealCard 
+                key={meal.id} 
+                meal={meal} 
+                onAddToCart={handleAddToCart}
+                onOpenDetails={handleOpenDetails}
+              />
+            ))}
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMeals.map((meal) => (
-            <MealCard 
-              key={meal.id} 
-              meal={meal} 
+          {/* AI Recommendations */}
+          {activeTab === 'home' && (
+            <RecommendationSection 
+              browsingHistory={browsingHistory} 
               onAddToCart={handleAddToCart}
               onOpenDetails={handleOpenDetails}
             />
-          ))}
-        </div>
-
-        {/* AI Recommendations */}
-        <RecommendationSection 
-          browsingHistory={browsingHistory} 
-          onAddToCart={handleAddToCart}
-          onOpenDetails={handleOpenDetails}
-        />
-      </main>
+          )}
+        </main>
+      </div>
 
       {/* Dialogs and Sheets */}
       <MealDetailsDialog 
