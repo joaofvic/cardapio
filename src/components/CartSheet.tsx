@@ -24,7 +24,8 @@ import {
   Banknote,
   Smartphone,
   QrCode,
-  Wallet
+  Wallet,
+  Ticket
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -49,6 +50,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   const [isNotHome, setIsNotHome] = useState(false);
   const [locationCaptured, setLocationCaptured] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string>("");
+  const [couponCode, setCouponCode] = useState("");
   const [address, setAddress] = useState({
     street: '',
     number: '',
@@ -182,7 +184,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               <Separator className="my-6" />
 
               {/* Delivery Section */}
-              <div className="space-y-4 pb-6">
+              <div className="space-y-4 pb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-primary/10 p-1.5 rounded-lg">
                     <MapPin className="text-primary" size={18} />
@@ -250,6 +252,30 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                     </div>
                   </div>
                 )}
+              </div>
+
+              <Separator className="my-2" />
+
+              {/* Coupon Section */}
+              <div className="space-y-4 pb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-primary/10 p-1.5 rounded-lg">
+                    <Ticket className="text-primary" size={18} />
+                  </div>
+                  <h3 className="font-bold text-lg">Cupom de Desconto</h3>
+                </div>
+                
+                <div className="relative group">
+                  <Input 
+                    placeholder="ADICIONAR CUPOM" 
+                    className="h-14 rounded-2xl bg-muted/30 border-none font-bold uppercase tracking-widest placeholder:text-muted-foreground/50 text-sm pl-4 pr-24"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  />
+                  <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all active:scale-95">
+                    APLICAR
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -357,4 +383,3 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     </Sheet>
   );
 }
-
