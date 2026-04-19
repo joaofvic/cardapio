@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, Bell, User } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -12,7 +12,6 @@ import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export type UserProfile = {
   name: string;
@@ -116,19 +115,6 @@ export default function HarvestBitesApp() {
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Refeições Saudáveis & Prontas
           </p>
-        </div>
-        <div className="flex gap-3">
-          <button className="p-3 bg-white rounded-2xl shadow-sm text-foreground hover:bg-muted transition-colors relative">
-            <Bell size={20} />
-            <span className="absolute top-3 right-3 w-2 h-2 bg-secondary rounded-full border-2 border-white" />
-          </button>
-          <div className="rounded-2xl border border-primary/20 overflow-hidden">
-            <Avatar className="w-10 h-10 rounded-2xl border-none">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold rounded-2xl text-xs">
-                {user ? user.name.substring(0, 2).toUpperCase() : <User size={16} />}
-              </AvatarFallback>
-            </Avatar>
-          </div>
         </div>
       </header>
 
