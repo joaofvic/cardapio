@@ -135,7 +135,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               </Button>
             </div>
           ) : step === 'cart' ? (
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 animate-in fade-in duration-300">
               {/* Item List */}
               <div className="space-y-4">
                 {items.map((item) => (
@@ -252,8 +252,8 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               </div>
             </div>
           ) : (
-            /* Step: Payment Selection */
-            <div className="py-4 space-y-6 animate-in slide-in-from-right duration-300">
+            /* Step: Payment Selection - Animation changed to slide-in-from-bottom */
+            <div className="py-4 space-y-6 animate-in slide-in-from-bottom duration-500 fill-mode-both">
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
                 <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
