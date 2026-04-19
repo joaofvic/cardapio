@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -40,7 +39,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
   const [paymentMethod, setPaymentMethod] = useState("card");
   
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const deliveryFee = items.length > 0 ? 5.99 : 0;
+  const deliveryFee = items.length > 0 ? 9.90 : 0;
   const total = subtotal + deliveryFee;
 
   const paymentMethods = [
@@ -52,6 +51,8 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
     { id: 'cash', label: 'Dinheiro', icon: Banknote },
   ];
 
+  const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0">
@@ -61,7 +62,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               <div className="bg-primary/10 p-2 rounded-xl">
                 <ShoppingBag className="text-primary" size={20} />
               </div>
-              <SheetTitle className="text-2xl font-black">Your Basket</SheetTitle>
+              <SheetTitle className="text-2xl font-black">Sua Cesta</SheetTitle>
             </div>
           </SheetHeader>
         </div>
@@ -72,14 +73,14 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
               <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
                 <ShoppingBag className="text-muted-foreground" size={40} />
               </div>
-              <p className="text-lg font-bold text-foreground mb-1">Your basket is empty</p>
-              <p className="text-sm text-muted-foreground">Add some delicious meals to get started!</p>
+              <p className="text-lg font-bold text-foreground mb-1">Sua cesta está vazia</p>
+              <p className="text-sm text-muted-foreground">Adicione algumas refeições deliciosas para começar!</p>
               <Button 
                 variant="outline" 
                 className="mt-6 rounded-full border-primary text-primary hover:bg-primary/10"
                 onClick={onClose}
               >
-                Browse Menu
+                Ver Cardápio
               </Button>
             </div>
           ) : (
@@ -93,7 +94,7 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
                     <div className="flex flex-col justify-between flex-grow">
                       <div>
                         <h4 className="font-bold text-foreground leading-tight">{item.name}</h4>
-                        <p className="text-primary font-bold text-sm">${item.price.toFixed(2)}</p>
+                        <p className="text-primary font-bold text-sm">{formatCurrency(item.price)}</p>
                       </div>
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center bg-muted rounded-full p-1 gap-3">
@@ -173,16 +174,16 @@ export function CartSheet({ isOpen, onClose, items, onUpdateQuantity, onRemove }
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-bold">${subtotal.toFixed(2)}</span>
+                <span className="font-bold">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Delivery Fee</span>
-                <span className="font-bold">${deliveryFee.toFixed(2)}</span>
+                <span className="text-muted-foreground">Taxa de Entrega</span>
+                <span className="font-bold">{formatCurrency(deliveryFee)}</span>
               </div>
               <Separator className="bg-border" />
               <div className="flex justify-between text-lg">
                 <span className="font-black">Total</span>
-                <span className="font-black text-primary">${total.toFixed(2)}</span>
+                <span className="font-black text-primary">{formatCurrency(total)}</span>
               </div>
             </div>
             <SheetFooter>

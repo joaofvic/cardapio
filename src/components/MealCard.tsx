@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -44,7 +43,7 @@ export function MealCard({ meal, onAddToCart, onOpenDetails }: MealCardProps) {
             {meal.name}
           </h3>
           <span className="font-bold text-primary text-lg">
-            ${meal.price.toFixed(2)}
+            R$ {meal.price.toFixed(2).replace('.', ',')}
           </span>
         </div>
         
@@ -56,15 +55,15 @@ export function MealCard({ meal, onAddToCart, onOpenDetails }: MealCardProps) {
           <div className="flex gap-3 text-[10px] font-bold text-muted-foreground">
             <div className="flex flex-col">
               <span className="text-foreground">{meal.protein}g</span>
-              <span>PROTEIN</span>
+              <span>PROTEÍNA</span>
             </div>
             <div className="flex flex-col border-l border-muted pl-3">
               <span className="text-foreground">{meal.carbs}g</span>
-              <span>CARBS</span>
+              <span>CARBO</span>
             </div>
             <div className="flex flex-col border-l border-muted pl-3">
               <span className="text-foreground">{meal.calories}</span>
-              <span>CALORIES</span>
+              <span>CALORIAS</span>
             </div>
           </div>
           

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Meal } from "@/app/types/meal";
@@ -51,7 +50,7 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
               </DialogHeader>
             </div>
             <div className="text-3xl font-black text-primary">
-              ${meal.price.toFixed(2)}
+              R$ {meal.price.toFixed(2).replace('.', ',')}
             </div>
           </div>
 
@@ -60,19 +59,19 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
           </p>
 
           <div className="bg-muted/50 p-6 rounded-2xl mb-8">
-            <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-foreground/70">Nutritional Facts</h4>
+            <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-foreground/70">Informações Nutricionais</h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col">
                 <span className="text-2xl font-black text-foreground">{meal.protein}g</span>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Protein</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Proteína</span>
               </div>
               <div className="flex flex-col border-l border-muted-foreground/20 pl-4">
                 <span className="text-2xl font-black text-foreground">{meal.carbs}g</span>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Carbs</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Carboidratos</span>
               </div>
               <div className="flex flex-col border-l border-muted-foreground/20 pl-4">
                 <span className="text-2xl font-black text-foreground">{meal.calories}</span>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Calories</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Calorias</span>
               </div>
             </div>
           </div>
@@ -80,11 +79,11 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
           <div className="space-y-3 mb-8">
             <div className="flex items-center gap-2 text-sm font-medium">
               <CheckCircle2 size={18} className="text-primary" />
-              <span>Chef-prepared and vacuum-sealed for freshness</span>
+              <span>Preparado pelo chef e selado a vácuo para frescor</span>
             </div>
             <div className="flex items-center gap-2 text-sm font-medium">
               <CheckCircle2 size={18} className="text-primary" />
-              <span>Locally sourced organic ingredients</span>
+              <span>Ingredientes orgânicos de origem local</span>
             </div>
           </div>
 
@@ -95,7 +94,7 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
               onClose();
             }}
           >
-            Add to Order
+            Adicionar ao Pedido
           </Button>
         </div>
       </DialogContent>
