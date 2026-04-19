@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Menu, ShoppingCart, Search } from "lucide-react";
+import { Home, Menu, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -12,10 +12,9 @@ interface BottomNavProps {
 
 export function BottomNav({ activeTab, onTabChange, cartCount }: BottomNavProps) {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Home' },
-    { id: 'menu', icon: Menu, label: 'Menu' },
-    { id: 'search', icon: Search, label: 'Search' },
-    { id: 'cart', icon: ShoppingCart, label: 'Cart', badge: cartCount },
+    { id: 'home', icon: Home, label: 'Início' },
+    { id: 'menu', icon: Menu, label: 'Cardápio' },
+    { id: 'cart', icon: ShoppingCart, label: 'Cesta', badge: cartCount },
   ];
 
   return (
