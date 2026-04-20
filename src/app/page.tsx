@@ -164,7 +164,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
       />
       
       <header className="flex justify-between items-start mb-8">
-        <div className="animate-in fade-in slide-in-from-left duration-700">
+        <div className="animate-in fade-in slide-in-from-left duration-[2000ms]">
           <h1 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h1>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
             Refeições Saudáveis & Prontas
@@ -173,7 +173,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         <div className="flex flex-col items-end gap-2">
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-1000"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-[2000ms]"
           >
             {userFirstName ? (
               <div className="flex items-center gap-2 px-1">
@@ -193,7 +193,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
           <button 
             key={selectedCity}
             onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-1000"
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-[2000ms]"
           >
             <MapPin size={14} className="text-primary" />
             <div className="text-right">
@@ -206,7 +206,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         </div>
       </header>
 
-      <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
+      <div className="animate-in fade-in slide-in-from-bottom-3 duration-[2000ms] fill-mode-both ease-out">
         <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
