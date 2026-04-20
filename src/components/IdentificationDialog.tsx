@@ -48,7 +48,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
     if (cleanPhone.length >= 10 && firestore && !initialUser && !loading) {
       handleLookup(cleanPhone);
     }
-  }, [phone, firestore, initialUser]);
+  }, [phone, firestore, initialUser, loading]);
 
   const handleLookup = async (phoneNumber: string) => {
     if (searching || !firestore) return;
@@ -121,7 +121,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
           </DialogTitle>
           <DialogDescription className="text-center">
             {isEditing 
-              ? "Atualize seus dados para facilitar seus próximos pedidos."
+              ? "Atualize seus dados sempre que necessário."
               : "Informe seu telefone para carregarmos seu cadastro."}
           </DialogDescription>
         </DialogHeader>
@@ -140,7 +140,6 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0"
                 type="tel"
                 required
-                disabled={isEditing}
               />
               {searching && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -148,9 +147,6 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 </div>
               )}
             </div>
-            {isEditing && (
-              <p className="text-[9px] text-muted-foreground ml-1">Para mudar o telefone, entre em contato com o suporte.</p>
-            )}
           </div>
 
           <div className="space-y-2">
