@@ -160,7 +160,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
             Refeições Saudáveis & Prontas
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-2">
           <button 
             onClick={() => setIsCityDialogOpen(true)}
             className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
