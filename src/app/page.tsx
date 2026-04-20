@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search, User } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -33,9 +33,9 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Next.js 15 requirement to unwrap promises
-  const _ = React.use(params);
-  const __ = React.use(searchParams);
+  // Next.js 15 requirement to unwrap promises using React.use()
+  const resolvedParams = React.use(params);
+  const resolvedSearchParams = React.use(searchParams);
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,7 +55,6 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     }
   }, []);
 
-  // Update categories to include Fish
   const categories = [
     { id: 'All', label: 'Todos' },
     { id: 'Chicken', label: 'Frango' },
@@ -128,8 +127,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
-      {/* Header */}
-      <header className="flex justify-between items-start mb-8">
+      <header className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-primary font-black text-2xl tracking-tighter">HARVEST BITES</h2>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -138,12 +136,9 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         </div>
         <button 
           onClick={() => setIsProfileOpen(true)}
-          className="bg-white p-2.5 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
+          className="bg-white px-4 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
         >
-          <div className="bg-primary/10 p-1.5 rounded-xl">
-            <User size={20} />
-          </div>
-          <div className="text-left hidden xs:block pr-1">
+          <div className="text-right">
             <p className="text-[9px] font-black uppercase text-muted-foreground leading-none mb-0.5">Perfil</p>
             <p className="text-xs font-bold text-foreground leading-none">
               {user ? user.name.split(' ')[0] : 'Entrar'}
@@ -152,14 +147,12 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         </button>
       </header>
 
-      {/* Main Content */}
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
-        {/* Search and Filter */}
         <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <Input 
-              className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary"
+              className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary focus-visible:ring-offset-0"
               placeholder="Buscar pratos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -184,12 +177,6 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         </div>
 
         <main className="mt-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-foreground">
-              {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${categories.find(c => c.id === activeCategory)?.label}`}
-            </h2>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredMeals.map((meal) => (
               <MealCard 

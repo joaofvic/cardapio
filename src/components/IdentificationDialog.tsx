@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -38,7 +37,6 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
     }
   }, [initialUser, isOpen]);
 
-  // Auto-lookup when phone reaches 10 or 11 digits
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length >= 10 && firestore && cleanPhone !== initialUser?.phone) {
@@ -58,7 +56,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
         setName(data.name);
       }
     } catch (error) {
-      // Silent per guidelines
+      // Silent
     } finally {
       setSearching(false);
     }
@@ -129,7 +127,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(00) 00000-0000"
-                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold"
+                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0"
                 type="tel"
                 required
               />
@@ -151,7 +149,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome..."
-                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold"
+                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0"
                 required
               />
             </div>
