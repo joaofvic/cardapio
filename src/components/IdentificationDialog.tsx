@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Phone, Loader2 } from "lucide-react";
+import { User, Phone, Loader2, Pencil } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { UserProfile } from "@/app/page";
@@ -77,10 +78,10 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
       if (docSnap.exists()) {
         userProfile = docSnap.data() as UserProfile;
-        if (name !== userProfile.name) {
-          userProfile.name = name;
-          setDoc(docRef, userProfile, { merge: true });
-        }
+        userProfile.name = name;
+        userProfile.phone = cleanPhone;
+        // Keep existing address if it exists
+        await setDoc(docRef, userProfile, { merge: true });
       } else {
         userProfile = {
           name,
@@ -92,7 +93,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
             city: "São Miguel - RN"
           }
         };
-        setDoc(docRef, userProfile);
+        await setDoc(docRef, userProfile);
       }
 
       onIdentify(userProfile);
@@ -103,16 +104,31 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
     }
   };
 
+  const isEditing = !!initialUser;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !loading && (open || initialUser) && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !loading && (open || isEditing) && onClose()}>
       <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none bg-white">
         <DialogHeader className="mb-6">
-          <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-            <User className="text-primary" size={32} />
+          <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto relative">
+            {isEditing ? (
+              <>
+                <User className="text-primary" size={32} />
+                <div className="absolute -top-1 -right-1 bg-white p-1.5 rounded-full shadow-sm border border-primary/20">
+                  <Pencil className="text-primary" size={12} />
+                </div>
+              </>
+            ) : (
+              <User className="text-primary" size={32} />
+            )}
           </div>
-          <DialogTitle className="text-2xl font-black text-center">Identificação</DialogTitle>
+          <DialogTitle className="text-2xl font-black text-center">
+            {isEditing ? "Editar Perfil" : "Identificação"}
+          </DialogTitle>
           <DialogDescription className="text-center">
-            Informe seu telefone para carregarmos seu cadastro.
+            {isEditing 
+              ? "Atualize seus dados para facilitar seus próximos pedidos."
+              : "Informe seu telefone para carregarmos seu cadastro."}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,6 +146,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0"
                 type="tel"
                 required
+                disabled={isEditing} // Phone is usually the primary key, don't allow change if editing existing
               />
               {searching && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -137,6 +154,9 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 </div>
               )}
             </div>
+            {isEditing && (
+              <p className="text-[9px] text-muted-foreground ml-1">Para mudar o telefone, entre em contato com o suporte.</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -160,7 +180,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
             disabled={loading || !name || phone.replace(/\D/g, "").length < 10}
             className="w-full h-14 rounded-full text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20"
           >
-            {loading ? <Loader2 className="animate-spin" /> : "Confirmar"}
+            {loading ? <Loader2 className="animate-spin" /> : (isEditing ? "Salvar Alterações" : "Confirmar")}
           </Button>
         </form>
       </DialogContent>

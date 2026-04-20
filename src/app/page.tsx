@@ -143,6 +143,8 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     setIsCityDialogOpen(false);
   };
 
+  const userFirstName = user?.name ? user.name.split(' ')[0] : null;
+
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
       <CitySelectionDialog 
@@ -173,9 +175,18 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
           </button>
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 border border-border/50"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
           >
-            <User size={20} />
+            {userFirstName ? (
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-xs font-bold text-foreground truncate max-w-[80px]">Olá, {userFirstName}</span>
+                <div className="bg-primary/10 p-1 rounded-lg">
+                  <User size={16} />
+                </div>
+              </div>
+            ) : (
+              <User size={20} />
+            )}
           </button>
         </div>
       </header>
