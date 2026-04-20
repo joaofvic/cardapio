@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, ChevronRight, Info } from "lucide-react";
+import { MapPin, ChevronRight, Info, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CITIES = [
@@ -96,9 +96,15 @@ export function CitySelectionDialog({ isOpen, onOpenChange, onCitySelect }: City
                   <Info className="text-amber-600" size={28} />
                 </div>
                 <h4 className="font-black text-amber-900 mb-2 uppercase tracking-tighter">Aviso de Entrega</h4>
-                <p className="text-sm text-amber-800 font-medium leading-relaxed px-2">
-                  Para <span className="font-black">{selectedTemp}</span>, realizamos rotas de entrega dos produtos nas respectivas datas das rotas semanais.
-                </p>
+                <div className="text-sm text-amber-800 font-medium leading-relaxed px-2 space-y-3">
+                  <p>
+                    Para <span className="font-black">{selectedTemp}</span>, realizamos rotas de entrega dos produtos nas respectivas datas das rotas semanais.
+                  </p>
+                  <div className="bg-white/50 py-2 px-4 rounded-xl border border-amber-200 inline-flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300 fill-mode-both">
+                    <Calendar size={14} className="text-amber-700" />
+                    <span className="font-black text-amber-900 uppercase text-[11px]">Próxima rota: Sab, 18/12</span>
+                  </div>
+                </div>
               </div>
               <div className="flex gap-3">
                 <Button 

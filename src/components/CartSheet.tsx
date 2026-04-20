@@ -31,7 +31,8 @@ import {
   Phone,
   Loader2,
   ChevronDown,
-  Info
+  Info,
+  Calendar
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -185,11 +186,12 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
     navigator.geolocation.getCurrentPosition((position) => {
       setLocationCaptured(true);
+      // Simplify for GPS capture
       setAddress(prev => ({ 
         ...prev, 
-        street: 'Localização GPS capturada',
+        street: 'Localização GPS',
         number: 'GPS',
-        neighborhood: 'Referência GPS'
+        neighborhood: 'Identificado via Satélite'
       }));
       toast({
         title: "Localização Capturada!",
@@ -227,10 +229,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     };
 
     const userRef = doc(firestore, "users", cleanPhone);
-    setDoc(userRef, userProfile, { merge: true })
-      .catch((error) => {
-        // Handled centrally
-      });
+    setDoc(userRef, userProfile, { merge: true });
 
     onIdentify(userProfile);
 
@@ -278,15 +277,21 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         </div>
 
         <ScrollArea className="flex-grow">
-          <div className="px-6 pb-32">
+          <div className="px-6 pb-40">
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
             
             {selectedCity !== "São Miguel - RN" && (
-              <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                <Info className="text-amber-600 shrink-0" size={18} />
-                <p className="text-[11px] font-bold text-amber-900 leading-tight">
-                  Aviso: Para <span className="font-black">{selectedCity}</span>, realizamos entregas nas datas das rotas semanais.
-                </p>
+              <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="flex gap-2">
+                  <Info className="text-amber-600 shrink-0" size={16} />
+                  <p className="text-[11px] font-bold text-amber-900 leading-tight">
+                    Aviso: Para <span className="font-black">{selectedCity}</span>, realizamos rotas de entrega nas datas das rotas semanais.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 pl-6">
+                  <Calendar size={12} className="text-amber-700" />
+                  <span className="text-[10px] font-black text-amber-900 uppercase">Próxima rota: Sab, 18/12</span>
+                </div>
               </div>
             )}
 
@@ -411,20 +416,19 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                             placeholder="42" 
                             className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary text-center" 
                             value={address.number} 
-                            onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
-                            inputMode="numeric"
+                            onChange={(e) => setAddress({...address, number: e.target.value})}
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3">
                         <div className="space-y-1.5">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro <span className="text-primary">*</span></Label>
                           <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
-                          <Input value={address.city} disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold opacity-60" />
-                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
+                        <Input placeholder="Próximo a..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary" value={address.reference} onChange={(e) => setAddress({...address, reference: e.target.value})} />
                       </div>
                     </div>
                   )}
