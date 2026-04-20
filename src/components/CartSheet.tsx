@@ -172,24 +172,37 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   };
 
   const handleGetLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setLocationCaptured(true);
-        if (!isNotHome) {
-          setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
-        }
-        toast({
-          title: "Localização Capturada!",
-          description: "Por favor, informe agora o número da residência e o bairro.",
-        });
-      }, (error) => {
-        toast({
-          variant: "destructive",
-          title: "Erro de Localização",
-          description: "Não foi possível capturar sua posição. Por favor, informe o endereço manualmente.",
-        });
+    if (!navigator.geolocation) {
+      toast({
+        variant: "destructive",
+        title: "Erro de Localização",
+        description: "Seu navegador não suporta geolocalização.",
       });
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      setLocationCaptured(true);
+      if (!isNotHome) {
+        setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
+      }
+      toast({
+        title: "Localização Capturada!",
+        description: "Por favor, informe agora o número da residência e o bairro.",
+      });
+    }, (error) => {
+      let msg = "Não foi possível capturar sua posição. Por favor, informe o endereço manualmente.";
+      if (error.code === 1) msg = "Permissão de localização negada pelo usuário.";
+      toast({
+        variant: "destructive",
+        title: "Erro de Localização",
+        description: msg,
+      });
+    }, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    });
   };
 
   const isFormValid = name.trim().length > 2 && 
