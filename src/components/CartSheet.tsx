@@ -111,7 +111,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   const scrollToTop = () => {
     if (scrollAreaTopRef.current) {
-      scrollAreaTopRef.current.scrollIntoView({ behavior: "smooth" });
+      scrollAreaTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -383,20 +383,21 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                           />
                         </div>
                         <div className="col-span-1 space-y-1">
-                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº <span className="text-primary">*</span></Label>
                           <Input 
                             placeholder="42" 
                             className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
                             value={address.number} 
                             onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
                             inputMode="numeric"
+                            required
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro</Label>
-                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro <span className="text-primary">*</span></Label>
+                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} required />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>

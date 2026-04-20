@@ -35,11 +35,11 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Use React.use() to unwrap the dynamic API promises in Next.js 15
-  const resolvedParams = React.use(params);
-  const resolvedSearchParams = React.use(searchParams);
+  // Correctly unwrap promises in Next.js 15
+  React.use(params);
+  React.use(searchParams);
 
-  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [activeCategory, setActiveCategory] = useState<string>('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('menu');
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -64,16 +64,24 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   }, []);
 
   const categories = [
-    { id: 'All', label: 'Todos' },
-    { id: 'Chicken', label: 'Frango' },
-    { id: 'Beef', label: 'Carne' },
-    { id: 'Fish', label: 'Peixe' },
-    { id: 'Veggie', label: 'Legumes' }
+    { id: 'Todos', label: 'Todos' },
+    { id: 'Frango', label: 'Frango' },
+    { id: 'Carne', label: 'Carne' },
+    { id: 'Peixe', label: 'Peixe' },
+    { id: 'Legumes', label: 'Legumes' }
   ];
 
   const filteredMeals = useMemo(() => {
     return MEALS.filter(meal => {
-      const matchesCategory = activeCategory === 'All' || meal.category === activeCategory;
+      const categoryMap: Record<string, string> = {
+        'Todos': 'All',
+        'Frango': 'Chicken',
+        'Carne': 'Beef',
+        'Peixe': 'Fish',
+        'Legumes': 'Veggie'
+      };
+      const activeId = categoryMap[activeCategory] || 'All';
+      const matchesCategory = activeId === 'All' || meal.category === activeId;
       const matchesSearch = meal.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            meal.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
@@ -155,8 +163,8 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
       
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-primary font-black text-2xl tracking-tighter">HARVEST BITES</h2>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+          <h2 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h2>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
             Refeições Saudáveis & Prontas
           </p>
         </div>
