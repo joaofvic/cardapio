@@ -102,9 +102,9 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
-      <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8 border-none bg-white shadow-2xl animate-in zoom-in duration-[2000ms]">
+      <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8 border-none bg-white shadow-2xl animate-in zoom-in duration-[3000ms] ease-in-out">
         <DialogHeader className="mb-8">
-          <div className="bg-primary/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-6 mx-auto relative animate-in zoom-in duration-[2000ms]">
+          <div className="bg-primary/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-6 mx-auto relative animate-in zoom-in duration-[3000ms] ease-in-out">
             {isEditing ? (
               <>
                 <User className="text-primary" size={40} />
