@@ -170,10 +170,10 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
             Refeições Saudáveis & Prontas
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2 animate-in fade-in slide-in-from-right duration-700">
+        <div className="flex flex-col items-end gap-2">
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-1000"
           >
             {userFirstName ? (
               <div className="flex items-center gap-2 px-1">
@@ -193,7 +193,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
           <button 
             key={selectedCity}
             onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-500"
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-1000"
           >
             <MapPin size={14} className="text-primary" />
             <div className="text-right">
@@ -284,4 +284,3 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     </div>
   );
 }
-
