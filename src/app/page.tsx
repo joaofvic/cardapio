@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,6 +12,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { IdentificationDialog } from "@/components/IdentificationDialog";
+import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -45,6 +47,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   
   const { toast } = useToast();
 
@@ -52,6 +55,10 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     const savedUser = localStorage.getItem('harvest_bites_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+    }
+    const savedCity = localStorage.getItem('harvest_bites_city');
+    if (savedCity) {
+      setSelectedCity(savedCity);
     }
   }, []);
 
@@ -125,8 +132,18 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     setIsProfileOpen(false);
   };
 
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    toast({
+      title: "Cidade Selecionada",
+      description: `Mostrando opções para ${city}.`,
+    });
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
+      <CitySelectionDialog onCitySelect={handleCitySelect} />
+      
       <header className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-primary font-black text-2xl tracking-tighter">HARVEST BITES</h2>
@@ -152,7 +169,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <Input 
-              className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary focus-visible:ring-offset-0"
+              className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:ring-inset"
               placeholder="Buscar pratos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -202,6 +219,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         onClose={() => setIsCartOpen(false)}
         items={cartItems}
         user={user}
+        selectedCity={selectedCity}
         onIdentify={handleIdentifyUser}
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}

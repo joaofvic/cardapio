@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -46,6 +47,7 @@ interface CartSheetProps {
   onClose: () => void;
   items: CartItem[];
   user: UserProfile | null;
+  selectedCity: string;
   onIdentify: (user: UserProfile) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
@@ -54,7 +56,7 @@ interface CartSheetProps {
 type CheckoutStep = 'cart' | 'payment';
 type PaymentType = 'online' | 'delivery';
 
-export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQuantity, onRemove }: CartSheetProps) {
+export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdentify, onUpdateQuantity, onRemove }: CartSheetProps) {
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [paymentType, setPaymentType] = useState<PaymentType>('online');
   const [isNotHome, setIsNotHome] = useState(false);
@@ -73,7 +75,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
     street: '',
     number: '',
     neighborhood: '',
-    city: 'São Miguel - RN',
+    city: selectedCity,
     complement: '',
     reference: ''
   });
@@ -87,8 +89,12 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
     } else {
       setPhone(user?.phone || "");
       setName(user?.name || "");
+      // Update city from props if no user address exists
+      if (!user?.address?.city) {
+        setAddress(prev => ({ ...prev, city: selectedCity }));
+      }
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, selectedCity]);
 
   useEffect(() => {
     if (user?.address && user.address.street) {
@@ -96,13 +102,13 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
         street: user.address.street || '',
         number: user.address.number || '',
         neighborhood: user.address.neighborhood || '',
-        city: user.address.city || 'São Miguel - RN',
+        city: user.address.city || selectedCity,
         complement: user.address.complement || '',
         reference: user.address.reference || ''
       });
       setIsNotHome(true);
     }
-  }, [user, isOpen]);
+  }, [user, isOpen, selectedCity]);
 
   const scrollToTop = () => {
     if (scrollAreaTopRef.current) {
@@ -127,7 +133,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                 street: data.address.street || '',
                 number: data.address.number || '',
                 neighborhood: data.address.neighborhood || '',
-                city: data.address.city || 'São Miguel - RN',
+                city: data.address.city || selectedCity,
                 complement: data.address.complement || '',
                 reference: data.address.reference || ''
               });
@@ -141,7 +147,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
       };
       handleLookup();
     }
-  }, [phone, firestore, user, searching]);
+  }, [phone, firestore, user, searching, selectedCity]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
@@ -310,7 +316,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <Input 
                           placeholder="(00) 00000-0000" 
-                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold" 
+                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset" 
                           value={phone} 
                           onChange={(e) => setPhone(e.target.value)}
                           type="tel"
@@ -324,7 +330,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <Input 
                           placeholder="Como podemos te chamar?" 
-                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold" 
+                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset" 
                           value={name} 
                           onChange={(e) => setName(e.target.value)}
                         />
@@ -360,13 +366,13 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                       <div className="grid grid-cols-4 gap-3">
                         <div className="col-span-3 space-y-1">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua / Avenida</Label>
-                          <Input placeholder="Nome da rua..." className="h-12 rounded-xl bg-muted/30 border-none" value={address.street} onChange={(e) => setAddress({...address, street: e.target.value})} />
+                          <Input placeholder="Nome da rua..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset" value={address.street} onChange={(e) => setAddress({...address, street: e.target.value})} />
                         </div>
                         <div className="col-span-1 space-y-1">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
                           <Input 
                             placeholder="42" 
-                            className="h-12 rounded-xl bg-muted/30 border-none" 
+                            className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset" 
                             value={address.number} 
                             onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
                             inputMode="numeric"
@@ -376,18 +382,18 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro</Label>
-                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
+                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
-                          <Input value="São Miguel - RN" disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
+                          <Input value={address.city} disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
                         </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
                         <Input 
                           placeholder="Ex: Próximo ao mercado..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none" 
+                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset" 
                           value={address.reference} 
                           onChange={(e) => setAddress({...address, reference: e.target.value})} 
                         />
@@ -404,7 +410,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
                     <h3 className="font-bold text-lg">Cupom de Desconto</h3>
                   </div>
                   <div className="relative">
-                    <Input placeholder="ADICIONAR CUPOM" className="h-14 rounded-2xl bg-muted/30 border-none font-bold uppercase" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
+                    <Input placeholder="ADICIONAR CUPOM" className="h-14 rounded-2xl bg-muted/30 border-none font-bold uppercase focus-visible:ring-primary focus-visible:ring-inset" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
                     <button onClick={handleApplyCoupon} className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold">APLICAR</button>
                   </div>
                   {appliedCoupon && <p className="text-xs font-bold text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Cupom {appliedCoupon} aplicado!</p>}
