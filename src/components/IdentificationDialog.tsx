@@ -32,18 +32,23 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
   const firestore = useFirestore();
 
   useEffect(() => {
-    if (initialUser) {
-      setPhone(initialUser.phone);
-      setName(initialUser.name);
+    if (isOpen) {
+      if (initialUser) {
+        setPhone(initialUser.phone);
+        setName(initialUser.name);
+      } else {
+        setPhone("");
+        setName("");
+      }
     }
   }, [initialUser, isOpen]);
 
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10 && firestore && cleanPhone !== initialUser?.phone) {
+    if (cleanPhone.length >= 10 && firestore && !initialUser && !loading) {
       handleLookup(cleanPhone);
     }
-  }, [phone, firestore]);
+  }, [phone, firestore, initialUser]);
 
   const handleLookup = async (phoneNumber: string) => {
     if (searching || !firestore) return;
@@ -72,30 +77,19 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
     
     try {
       const docRef = doc(firestore, "users", cleanPhone);
-      const docSnap = await getDoc(docRef);
       
-      let userProfile: UserProfile;
-
-      if (docSnap.exists()) {
-        userProfile = docSnap.data() as UserProfile;
-        userProfile.name = name;
-        userProfile.phone = cleanPhone;
-        // Keep existing address if it exists
-        await setDoc(docRef, userProfile, { merge: true });
-      } else {
-        userProfile = {
-          name,
-          phone: cleanPhone,
-          address: initialUser?.address || {
-            street: "",
-            number: "",
-            neighborhood: "",
-            city: "São Miguel - RN"
-          }
-        };
-        await setDoc(docRef, userProfile);
-      }
-
+      const userProfile: UserProfile = {
+        name,
+        phone: cleanPhone,
+        address: initialUser?.address || {
+          street: "",
+          number: "",
+          neighborhood: "",
+          city: "São Miguel - RN"
+        }
+      };
+      
+      await setDoc(docRef, userProfile, { merge: true });
       onIdentify(userProfile);
     } catch (error) {
       onIdentify({ name, phone: cleanPhone, address: initialUser?.address });
@@ -107,7 +101,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
   const isEditing = !!initialUser;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !loading && (open || isEditing) && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
       <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none bg-white">
         <DialogHeader className="mb-6">
           <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto relative">
@@ -143,10 +137,10 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(00) 00000-0000"
-                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0"
+                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0"
                 type="tel"
                 required
-                disabled={isEditing} // Phone is usually the primary key, don't allow change if editing existing
+                disabled={isEditing}
               />
               {searching && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -169,7 +163,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome..."
-                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0"
+                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0"
                 required
               />
             </div>

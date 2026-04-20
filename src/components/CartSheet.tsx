@@ -116,10 +116,9 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   };
 
   useEffect(() => {
-    if (phone.replace(/\D/g, "").length >= 10 && firestore && !user) {
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length >= 10 && firestore && !user && !searching) {
       const handleLookup = async () => {
-        const cleanPhone = phone.replace(/\D/g, "");
-        if (searching) return;
         setSearching(true);
         try {
           const docRef = doc(firestore, "users", cleanPhone);
@@ -146,7 +145,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       };
       handleLookup();
     }
-  }, [phone, firestore, user, searching, selectedCity]);
+  }, [phone, firestore, user, selectedCity]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;

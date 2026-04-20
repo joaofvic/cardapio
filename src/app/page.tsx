@@ -35,7 +35,7 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Unwrapping promises with React.use() to comply with Next.js 15 requirements
+  // Consuming the promises with React.use() as required by Next.js 15
   React.use(params);
   React.use(searchParams);
 
