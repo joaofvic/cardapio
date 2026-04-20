@@ -30,7 +30,8 @@ import {
   User,
   Phone,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  Info
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -184,14 +185,12 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
     navigator.geolocation.getCurrentPosition((position) => {
       setLocationCaptured(true);
-      if (!isNotHome) {
-        setAddress(prev => ({ 
-          ...prev, 
-          street: 'Localização atual capturada',
-          number: 'SN',
-          neighborhood: 'GPS'
-        }));
-      }
+      setAddress(prev => ({ 
+        ...prev, 
+        street: 'Localização GPS capturada',
+        number: 'GPS',
+        neighborhood: 'GPS'
+      }));
       toast({
         title: "Localização Capturada!",
         description: "Sua posição foi identificada.",
@@ -281,6 +280,16 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         <ScrollArea className="flex-grow">
           <div className="px-6 pb-8">
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
+            
+            {selectedCity !== "São Miguel - RN" && (
+              <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                <Info className="text-amber-600 shrink-0" size={18} />
+                <p className="text-[11px] font-bold text-amber-900 leading-tight">
+                  Aviso: Para <span className="font-black">{selectedCity}</span>, realizamos entregas nas datas das rotas semanais.
+                </p>
+              </div>
+            )}
+
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
                 <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -432,7 +441,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
                 <Separator className="opacity-50" />
 
-                {/* Resumo Dinâmico dentro do ScrollArea */}
                 <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="flex justify-between text-xs font-bold text-muted-foreground">
                     <span>Subtotal</span>
@@ -503,7 +511,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
           </div>
         </ScrollArea>
 
-        {/* Rodapé Fixo e Compacto */}
         {items.length > 0 && (
           <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)] shrink-0 animate-in slide-in-from-bottom duration-500">
             <div className="flex items-end justify-between mb-6 px-1">
@@ -526,7 +533,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   onClick={handleNextStep} 
                   className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98] uppercase tracking-tighter"
                 >
-                  Confirmar Dados
+                  Ir para Pagamento
                 </Button>
               ) : (
                 <Button 

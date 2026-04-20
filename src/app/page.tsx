@@ -35,7 +35,7 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Consuming the promises with React.use() as required by Next.js 15
+  // Use React.use() to unwrap the dynamic route params in Next.js 15
   React.use(params);
   React.use(searchParams);
 
@@ -60,6 +60,8 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     const savedCity = localStorage.getItem('harvest_bites_city');
     if (savedCity) {
       setSelectedCity(savedCity);
+    } else {
+      setIsCityDialogOpen(true);
     }
   }, []);
 
