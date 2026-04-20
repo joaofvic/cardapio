@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -23,27 +24,28 @@ const CITIES = [
 ];
 
 interface CitySelectionDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onCitySelect: (city: string) => void;
 }
 
-export function CitySelectionDialog({ onCitySelect }: CitySelectionDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function CitySelectionDialog({ isOpen, onOpenChange, onCitySelect }: CitySelectionDialogProps) {
+  const [shouldShowInitial, setShouldShowInitial] = useState(false);
 
   useEffect(() => {
     const savedCity = localStorage.getItem("harvest_bites_city");
     if (!savedCity) {
-      setIsOpen(true);
+      setShouldShowInitial(true);
+      onOpenChange(true);
     }
-  }, []);
+  }, [onOpenChange]);
 
   const handleSelect = (city: string) => {
-    localStorage.setItem("harvest_bites_city", city);
     onCitySelect(city);
-    setIsOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none rounded-[2rem] bg-white">
         <div className="bg-primary p-10 text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
@@ -64,7 +66,7 @@ export function CitySelectionDialog({ onCitySelect }: CitySelectionDialogProps) 
               <button
                 key={city}
                 onClick={() => handleSelect(city)}
-                className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 hover:bg-primary/10 hover:text-primary transition-all group border border-transparent hover:border-primary/20"
+                className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 hover:bg-primary/10 hover:text-primary transition-all group border border-transparent hover:border-primary/20 text-left"
               >
                 <span className="font-bold">{city}</span>
                 <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />

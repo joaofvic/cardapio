@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, MapPin, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -46,6 +46,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isCityDialogOpen, setIsCityDialogOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   
@@ -134,15 +135,21 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
 
   const handleCitySelect = (city: string) => {
     setSelectedCity(city);
+    localStorage.setItem('harvest_bites_city', city);
     toast({
       title: "Cidade Selecionada",
       description: `Mostrando opções para ${city}.`,
     });
+    setIsCityDialogOpen(false);
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
-      <CitySelectionDialog onCitySelect={handleCitySelect} />
+      <CitySelectionDialog 
+        isOpen={isCityDialogOpen} 
+        onOpenChange={setIsCityDialogOpen}
+        onCitySelect={handleCitySelect} 
+      />
       
       <header className="flex justify-between items-center mb-8">
         <div>
@@ -151,17 +158,26 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
             Refeições Saudáveis & Prontas
           </p>
         </div>
-        <button 
-          onClick={() => setIsProfileOpen(true)}
-          className="bg-white px-4 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
-        >
-          <div className="text-right">
-            <p className="text-[9px] font-black uppercase text-muted-foreground leading-none mb-0.5">Perfil</p>
-            <p className="text-xs font-bold text-foreground leading-none">
-              {user ? user.name.split(' ')[0] : 'Entrar'}
-            </p>
-          </div>
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsCityDialogOpen(true)}
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
+          >
+            <MapPin size={14} className="text-primary" />
+            <div className="text-right">
+              <p className="text-[9px] font-black uppercase text-muted-foreground leading-none mb-0.5">Entregar em</p>
+              <p className="text-xs font-bold text-foreground leading-none truncate max-w-[100px] sm:max-w-none">
+                {selectedCity}
+              </p>
+            </div>
+          </button>
+          <button 
+            onClick={() => setIsProfileOpen(true)}
+            className="bg-white p-2.5 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 border border-border/50"
+          >
+            <User size={20} />
+          </button>
+        </div>
       </header>
 
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
