@@ -163,26 +163,14 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         onCitySelect={handleCitySelect} 
       />
       
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h2>
+      <header className="flex justify-between items-start mb-8">
+        <div className="animate-in fade-in slide-in-from-left duration-700">
+          <h1 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h1>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
             Refeições Saudáveis & Prontas
           </p>
         </div>
-        <div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-2">
-          <button 
-            onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
-          >
-            <MapPin size={14} className="text-primary" />
-            <div className="text-right">
-              <p className="text-[9px] font-black uppercase text-muted-foreground leading-none mb-0.5">Entregar em</p>
-              <p className="text-xs font-bold text-foreground leading-none truncate max-w-[100px] sm:max-w-none">
-                {selectedCity}
-              </p>
-            </div>
-          </button>
+        <div className="flex flex-col items-end gap-2 animate-in fade-in slide-in-from-right duration-700">
           <button 
             onClick={() => setIsProfileOpen(true)}
             className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
@@ -195,8 +183,25 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
                 </div>
               </div>
             ) : (
-              <User size={20} />
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-xs font-bold text-foreground">Perfil</span>
+                <User size={18} />
+              </div>
             )}
+          </button>
+
+          <button 
+            key={selectedCity}
+            onClick={() => setIsCityDialogOpen(true)}
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-500"
+          >
+            <MapPin size={14} className="text-primary" />
+            <div className="text-right">
+              <p className="text-[9px] font-black uppercase text-muted-foreground leading-none mb-0.5">Entregar em</p>
+              <p className="text-xs font-bold text-foreground leading-none truncate max-w-[120px]">
+                {selectedCity}
+              </p>
+            </div>
           </button>
         </div>
       </header>
@@ -279,3 +284,4 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     </div>
   );
 }
+

@@ -189,7 +189,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         ...prev, 
         street: 'Localização GPS capturada',
         number: 'GPS',
-        neighborhood: 'GPS'
+        neighborhood: 'Referência GPS'
       }));
       toast({
         title: "Localização Capturada!",
@@ -208,7 +208,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                     phone.replace(/\D/g, "").length >= 10 && 
                     (isNotHome ? 
                       (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '') : 
-                      locationCaptured
+                      (locationCaptured || (address.street.trim() !== '' && address.number.trim() !== ''))
                     );
 
   const handleNextStep = () => {
@@ -278,7 +278,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         </div>
 
         <ScrollArea className="flex-grow">
-          <div className="px-6 pb-8">
+          <div className="px-6 pb-32">
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
             
             {selectedCity !== "São Miguel - RN" && (
@@ -426,41 +426,30 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                           <Input value={address.city} disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold opacity-60" />
                         </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
-                        <Input 
-                          placeholder="Ex: Próximo ao mercado..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary" 
-                          value={address.reference} 
-                          onChange={(e) => setAddress({...address, reference: e.target.value})} 
-                        />
-                      </div>
                     </div>
                   )}
                 </div>
 
-                <Separator className="opacity-50" />
-
-                <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  <div className="flex justify-between text-xs font-bold text-muted-foreground">
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(subtotal)}</span>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-xs font-bold text-primary">
-                      <span>Desconto Especial (Cupom)</span>
-                      <span>-{formatCurrency(discountAmount)}</span>
+                <div className="pt-10 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+                  <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3">
+                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                      <span>Subtotal</span>
+                      <span>{formatCurrency(subtotal)}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between text-xs font-bold text-muted-foreground">
-                    <span>Taxa de Entrega</span>
-                    <span>{formatCurrency(deliveryFee)}</span>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-xs font-bold text-primary">
+                        <span>Desconto Especial (Cupom)</span>
+                        <span>-{formatCurrency(discountAmount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                      <span>Taxa de Entrega</span>
+                      <span>{formatCurrency(deliveryFee)}</span>
+                    </div>
                   </div>
-                  
-                  <Separator className="my-2 opacity-50" />
-                  
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center gap-2 mb-1">
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1 px-1">
                       <div className="bg-primary/10 p-1.5 rounded-lg"><Ticket className="text-primary" size={14} /></div>
                       <h3 className="font-black text-[10px] uppercase tracking-wider">Cupom de Desconto</h3>
                     </div>
@@ -512,18 +501,16 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         </ScrollArea>
 
         {items.length > 0 && (
-          <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)] shrink-0 animate-in slide-in-from-bottom duration-500">
+          <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0 animate-in slide-in-from-bottom duration-500">
             <div className="flex items-end justify-between mb-6 px-1">
               <div className="flex flex-col">
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total do Pedido</span>
                 <span className="text-3xl font-black text-primary leading-none mt-1">{formatCurrency(total)}</span>
               </div>
-              {step === 'cart' && (
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{items.length} {items.length === 1 ? 'item' : 'itens'}</span>
-                  <ChevronDown className="text-muted-foreground animate-bounce" size={14} />
-                </div>
-              )}
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">{items.length} {items.length === 1 ? 'item' : 'itens'}</span>
+                <ChevronDown className="text-muted-foreground animate-bounce" size={14} />
+              </div>
             </div>
             
             <SheetFooter>

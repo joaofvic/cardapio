@@ -108,7 +108,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
             {isEditing ? (
               <>
                 <User className="text-primary" size={40} />
-                <div className="absolute -top-2 -right-2 bg-white p-2 rounded-full shadow-md border border-primary/20">
+                <div className="absolute -top-1 -right-1 bg-white p-2 rounded-full shadow-md border border-primary/20 animate-pulse">
                   <Pencil className="text-primary" size={14} />
                 </div>
               </>
@@ -119,7 +119,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
           <DialogTitle className="text-3xl font-black text-center tracking-tighter">
             {isEditing ? "Seu Perfil" : "Identificação"}
           </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground mt-2 font-medium">
+          <DialogDescription className="text-center text-muted-foreground mt-2 font-medium px-4">
             {isEditing 
               ? "Atualize seus dados para um atendimento personalizado."
               : "Informe seus dados para salvar seu histórico e endereços."}
