@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -34,8 +33,7 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Use React.use() to unwrap the promises as required by Next.js 15
-  // We unwrap them but we don't necessarily use them if the app doesn't need dynamic routing params here
+  // Next.js 15 requirement to unwrap promises
   const _ = React.use(params);
   const __ = React.use(searchParams);
 
@@ -57,7 +55,14 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     }
   }, []);
 
-  const categories = ['All', 'Chicken', 'Beef', 'Veggie'];
+  // Update categories to include Fish
+  const categories = [
+    { id: 'All', label: 'Todos' },
+    { id: 'Chicken', label: 'Frango' },
+    { id: 'Beef', label: 'Carne' },
+    { id: 'Fish', label: 'Peixe' },
+    { id: 'Veggie', label: 'Legumes' }
+  ];
 
   const filteredMeals = useMemo(() => {
     return MEALS.filter(meal => {
@@ -164,15 +169,15 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             {categories.map((cat) => (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
                 className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
-                  activeCategory === cat 
+                  activeCategory === cat.id 
                   ? 'bg-primary text-white shadow-lg shadow-primary/20' 
                   : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
                 }`}
               >
-                {cat === 'All' ? 'Todos' : cat}
+                {cat.label}
               </button>
             ))}
           </div>
@@ -181,7 +186,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         <main className="mt-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-black text-foreground">
-              {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${activeCategory}`}
+              {activeCategory === 'All' ? 'Cardápio Curado' : `Seleções: ${categories.find(c => c.id === activeCategory)?.label}`}
             </h2>
           </div>
 

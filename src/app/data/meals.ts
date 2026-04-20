@@ -57,6 +57,30 @@ export const MEALS: Meal[] = [
   },
   {
     id: '5',
+    name: 'Salmão com Aspargos',
+    category: 'Fish',
+    description: 'Filé de salmão grelhado na manteiga de ervas, acompanhado de aspargos frescos e arroz integral.',
+    price: 52.90,
+    protein: 34,
+    carbs: 15,
+    calories: 380,
+    imageUrl: getImg('meal-fish-1'),
+    rating: 4.9
+  },
+  {
+    id: '6',
+    name: 'Tilápia ao Limone',
+    category: 'Fish',
+    description: 'Filé de tilápia levemente empanado com raspas de limão siciliano, servido com purê de couve-flor.',
+    price: 38.90,
+    protein: 28,
+    carbs: 10,
+    calories: 290,
+    imageUrl: getImg('meal-fish-2'),
+    rating: 4.5
+  },
+  {
+    id: '7',
     name: 'Quinoa Harvest Bowl',
     category: 'Veggie',
     description: 'Uma mistura vibrante de quinoa orgânica, abóbora assada, grão-de-bico e um toque de tahine.',
@@ -68,7 +92,7 @@ export const MEALS: Meal[] = [
     rating: 4.5
   },
   {
-    id: '6',
+    id: '8',
     name: 'Roasted Veggie Medley',
     category: 'Veggie',
     description: 'Vegetais de raiz sazonais assados com perfeição com cobertura balsâmica e amêndoas torradas.',

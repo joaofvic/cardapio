@@ -1,4 +1,3 @@
-
 {
   "placeholderImages": [
     {
@@ -42,6 +41,18 @@
       "description": "Roasted Veggie Medley",
       "imageUrl": "https://picsum.photos/seed/veggie2/400/300",
       "imageHint": "roasted vegetables"
+    },
+    {
+      "id": "meal-fish-1",
+      "description": "Grilled Salmon",
+      "imageUrl": "https://picsum.photos/seed/fish1/400/300",
+      "imageHint": "grilled salmon"
+    },
+    {
+      "id": "meal-fish-2",
+      "description": "Tilapia with Herbs",
+      "imageUrl": "https://picsum.photos/seed/fish2/400/300",
+      "imageHint": "fish fillet"
     }
   ]
 }
