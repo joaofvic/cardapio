@@ -29,7 +29,8 @@ import {
   Ticket,
   User,
   Phone,
-  Loader2
+  Loader2,
+  ChevronDown
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -193,20 +194,14 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       }
       toast({
         title: "Localização Capturada!",
-        description: "Localização identificada com sucesso.",
+        description: "Sua posição foi identificada.",
       });
     }, (error) => {
-      let msg = "Não foi possível capturar sua posição. Por favor, informe o endereço manualmente.";
-      if (error.code === 1) msg = "Permissão de localização negada pelo usuário.";
       toast({
         variant: "destructive",
         title: "Erro de Localização",
-        description: msg,
+        description: "Por favor, informe o endereço manualmente.",
       });
-    }, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
     });
   };
 
@@ -261,8 +256,8 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden">
-        <div className="p-6 pb-2">
+      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2.5rem] flex flex-col p-0 overflow-hidden shadow-2xl">
+        <div className="p-6 pb-2 shrink-0">
           <SheetHeader>
             <div className="flex items-center gap-2 mb-2">
               {step === 'payment' && (
@@ -284,7 +279,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         </div>
 
         <ScrollArea className="flex-grow">
-          <div className="px-6 py-4">
+          <div className="px-6 pb-8">
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -301,47 +296,47 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                 </Button>
               </div>
             ) : step === 'cart' ? (
-              <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-4 group">
-                      <div className="relative h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-sm">
+                      <div className="relative h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-border/40">
                         <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                       </div>
-                      <div className="flex flex-col justify-between flex-grow">
+                      <div className="flex flex-col justify-between flex-grow py-0.5">
                         <div>
-                          <h4 className="font-bold text-foreground leading-tight">{item.name}</h4>
-                          <p className="text-primary font-bold text-sm">{formatCurrency(item.price)}</p>
+                          <h4 className="font-bold text-foreground leading-tight text-sm">{item.name}</h4>
+                          <p className="text-primary font-black text-xs mt-1">{formatCurrency(item.price)}</p>
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center bg-muted rounded-full p-1 gap-3">
-                            <button onClick={() => onUpdateQuantity(item.id, -1)} className="h-6 w-6 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white"><Minus size={14} /></button>
-                            <span className="text-xs font-bold">{item.quantity}</span>
-                            <button onClick={() => onUpdateQuantity(item.id, 1)} className="h-6 w-6 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white"><Plus size={14} /></button>
+                          <div className="flex items-center bg-muted/50 rounded-full p-0.5 gap-3 border border-border/20">
+                            <button onClick={() => onUpdateQuantity(item.id, -1)} className="h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white transition-colors active:scale-90"><Minus size={12} /></button>
+                            <span className="text-xs font-black w-4 text-center">{item.quantity}</span>
+                            <button onClick={() => onUpdateQuantity(item.id, 1)} className="h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white transition-colors active:scale-90"><Plus size={12} /></button>
                           </div>
-                          <button onClick={() => onRemove(item.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
+                          <button onClick={() => onRemove(item.id)} className="text-muted-foreground hover:text-destructive transition-colors p-2"><Trash2 size={16} /></button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <Separator />
+                <Separator className="opacity-50" />
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="bg-primary/10 p-1.5 rounded-lg"><User className="text-primary" size={18} /></div>
-                    <h3 className="font-bold text-lg">Seus Dados</h3>
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="bg-primary/10 p-1.5 rounded-lg"><User className="text-primary" size={16} /></div>
+                    <h3 className="font-black text-sm uppercase tracking-wider">Seus Dados</h3>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div className="space-y-1">
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Telefone (WhatsApp)</Label>
                       <div className="relative">
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <Input 
                           placeholder="(00) 00000-0000" 
-                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
+                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary" 
                           value={phone} 
                           onChange={(e) => setPhone(e.target.value)}
                           type="tel"
@@ -349,13 +344,13 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                         {searching && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-primary" size={16} />}
                       </div>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Seu Nome</Label>
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <Input 
                           placeholder="Como podemos te chamar?" 
-                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
+                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary" 
                           value={name} 
                           onChange={(e) => setName(e.target.value)}
                         />
@@ -364,67 +359,69 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="opacity-50" />
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="bg-primary/10 p-1.5 rounded-lg"><MapPin className="text-primary" size={18} /></div>
-                    <h3 className="font-bold text-lg">Local de Entrega</h3>
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="bg-primary/10 p-1.5 rounded-lg"><MapPin className="text-primary" size={16} /></div>
+                    <h3 className="font-black text-sm uppercase tracking-wider">Local de Entrega</h3>
                   </div>
                   
                   <Button 
                     variant="outline" 
-                    className={cn("w-full rounded-xl h-12 flex items-center gap-2 font-bold", locationCaptured ? "bg-primary/10 border-primary text-primary" : "border-primary text-primary")}
+                    className={cn(
+                      "w-full rounded-2xl h-14 flex items-center justify-center gap-3 font-black transition-all border-2",
+                      locationCaptured ? "bg-primary/5 border-primary text-primary" : "border-muted-foreground/20 text-foreground hover:border-primary/50"
+                    )}
                     onClick={handleGetLocation}
                   >
                     <MapPin size={18} />
-                    {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
+                    {locationCaptured ? "LOCALIZAÇÃO CAPTURADA" : "USAR MINHA LOCALIZAÇÃO"}
                   </Button>
 
                   <div className="flex items-center space-x-2 px-1">
-                    <Checkbox id="not-home" checked={isNotHome} onCheckedChange={(c) => setIsNotHome(!!c)} />
-                    <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer">Não estou em casa (Informar endereço)</Label>
+                    <Checkbox id="not-home" checked={isNotHome} onCheckedChange={(c) => setIsNotHome(!!c)} className="rounded-md h-5 w-5" />
+                    <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer text-muted-foreground hover:text-foreground">Não estou em casa (Informar endereço)</Label>
                   </div>
 
                   {isNotHome && (
                     <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="grid grid-cols-4 gap-3">
-                        <div className="col-span-3 space-y-1">
+                        <div className="col-span-3 space-y-1.5">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua / Avenida</Label>
                           <Input 
                             placeholder="Nome da rua..." 
-                            className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
+                            className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary" 
                             value={address.street} 
                             onChange={(e) => setAddress({...address, street: e.target.value})}
                           />
                         </div>
-                        <div className="col-span-1 space-y-1">
+                        <div className="col-span-1 space-y-1.5">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº <span className="text-primary">*</span></Label>
                           <Input 
                             placeholder="42" 
-                            className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
+                            className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary text-center" 
                             value={address.number} 
                             onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
                             inputMode="numeric"
-                            required
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro <span className="text-primary">*</span></Label>
-                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} required />
+                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
-                          <Input value={address.city} disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
+                          <Input value={address.city} disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold opacity-60" />
                         </div>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
                         <Input 
                           placeholder="Ex: Próximo ao mercado..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
+                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary" 
                           value={address.reference} 
                           onChange={(e) => setAddress({...address, reference: e.target.value})} 
                         />
@@ -433,44 +430,70 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="opacity-50" />
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="bg-primary/10 p-1.5 rounded-lg"><Ticket className="text-primary" size={18} /></div>
-                    <h3 className="font-bold text-lg">Cupom de Desconto</h3>
+                {/* Resumo Dinâmico dentro do ScrollArea */}
+                <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="relative">
-                    <Input placeholder="ADICIONAR CUPOM" className="h-14 rounded-2xl bg-muted/30 border-none font-bold uppercase focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
-                    <button onClick={handleApplyCoupon} className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold">APLICAR</button>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-xs font-bold text-primary">
+                      <span>Desconto Especial (Cupom)</span>
+                      <span>-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                    <span>Taxa de Entrega</span>
+                    <span>{formatCurrency(deliveryFee)}</span>
                   </div>
-                  {appliedCoupon && <p className="text-xs font-bold text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Cupom {appliedCoupon} aplicado!</p>}
+                  
+                  <Separator className="my-2 opacity-50" />
+                  
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="bg-primary/10 p-1.5 rounded-lg"><Ticket className="text-primary" size={14} /></div>
+                      <h3 className="font-black text-[10px] uppercase tracking-wider">Cupom de Desconto</h3>
+                    </div>
+                    <div className="relative">
+                      <Input placeholder="Código do cupom" className="h-12 rounded-xl bg-white border-none font-bold uppercase focus-visible:ring-primary pr-24 shadow-sm" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
+                      <button onClick={handleApplyCoupon} className="absolute right-1.5 top-1.5 bg-primary text-white h-9 px-4 rounded-lg text-[10px] font-black uppercase transition-transform active:scale-95">Aplicar</button>
+                    </div>
+                    {appliedCoupon && (
+                      <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full w-fit animate-in zoom-in duration-300">
+                        <CheckCircle2 size={12} className="text-primary" />
+                        <span className="text-[10px] font-black text-primary uppercase">Cupom {appliedCoupon} Ativado</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
-                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
-                  <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
+              <div className="space-y-6 animate-in slide-in-from-right duration-500">
+                <div className="bg-primary/5 p-5 rounded-3xl border border-primary/10 text-center">
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Total a Pagar</p>
+                  <p className="text-4xl font-black text-foreground">{formatCurrency(total)}</p>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="font-bold text-lg">Escolha como pagar</h3>
-                  <div className="flex p-1 bg-muted rounded-2xl">
-                    <button onClick={() => {setPaymentType('online'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'online' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Pagar Online</button>
-                    <button onClick={() => {setPaymentType('delivery'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'delivery' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Na Entrega</button>
+                  <h3 className="font-black text-lg">Método de Pagamento</h3>
+                  <div className="flex p-1 bg-muted/50 rounded-2xl border border-border/20">
+                    <button onClick={() => {setPaymentType('online'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-xs font-black uppercase transition-all", paymentType === 'online' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Pagar Online</button>
+                    <button onClick={() => {setPaymentType('delivery'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-xs font-black uppercase transition-all", paymentType === 'delivery' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Na Entrega</button>
                   </div>
                 </div>
 
-                <div className="animate-in fade-in slide-in-from-right-full duration-500 fill-mode-both" key={paymentType}>
+                <div className="animate-in fade-in slide-in-from-right-10 duration-500 fill-mode-both" key={paymentType}>
                   <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment} className="grid gap-3">
                     {filteredMethods.map((method) => (
-                      <Label key={method.id} htmlFor={method.id} className={cn("flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer", selectedPayment === method.id ? "border-primary bg-primary/5" : "border-muted")}>
+                      <Label key={method.id} htmlFor={method.id} className={cn("flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer group", selectedPayment === method.id ? "border-primary bg-primary/5" : "border-muted-foreground/10 hover:border-primary/30")}>
                         <div className="flex items-center gap-3">
-                          <div className={cn("p-2 rounded-xl", selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground")}><method.icon size={20} /></div>
-                          <span className="font-bold">{method.label}</span>
+                          <div className={cn("p-2 rounded-xl transition-colors", selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary")}><method.icon size={20} /></div>
+                          <span className="font-bold text-sm">{method.label}</span>
                         </div>
                         <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
+                        {selectedPayment === method.id && <CheckCircle2 className="text-primary" size={20} />}
                       </Label>
                     ))}
                   </RadioGroup>
@@ -480,20 +503,39 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
           </div>
         </ScrollArea>
 
+        {/* Rodapé Fixo e Compacto */}
         {items.length > 0 && (
-          <div className="p-6 bg-muted/30 border-t rounded-t-[2rem]">
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="font-bold">{formatCurrency(subtotal)}</span></div>
-              {discountAmount > 0 && <div className="flex justify-between text-sm text-primary font-bold"><span>Desconto (50%)</span><span>-{formatCurrency(discountAmount)}</span></div>}
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Taxa de Entrega</span><span className="font-bold">{formatCurrency(deliveryFee)}</span></div>
-              <Separator />
-              <div className="flex justify-between text-lg"><span className="font-black">Total</span><span className="font-black text-primary">{formatCurrency(total)}</span></div>
+          <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)] shrink-0 animate-in slide-in-from-bottom duration-500">
+            <div className="flex items-end justify-between mb-6 px-1">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total do Pedido</span>
+                <span className="text-3xl font-black text-primary leading-none mt-1">{formatCurrency(total)}</span>
+              </div>
+              {step === 'cart' && (
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{items.length} {items.length === 1 ? 'item' : 'itens'}</span>
+                  <ChevronDown className="text-muted-foreground animate-bounce" size={14} />
+                </div>
+              )}
             </div>
+            
             <SheetFooter>
               {step === 'cart' ? (
-                <Button disabled={!isFormValid} onClick={handleNextStep} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Ir para Pagamento</Button>
+                <Button 
+                  disabled={!isFormValid} 
+                  onClick={handleNextStep} 
+                  className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98] uppercase tracking-tighter"
+                >
+                  Confirmar Dados
+                </Button>
               ) : (
-                <Button disabled={!selectedPayment} onClick={handleFinalize} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Finalizar Pedido</Button>
+                <Button 
+                  disabled={!selectedPayment} 
+                  onClick={handleFinalize} 
+                  className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98] uppercase tracking-tighter"
+                >
+                  Finalizar Pedido
+                </Button>
               )}
             </SheetFooter>
           </div>

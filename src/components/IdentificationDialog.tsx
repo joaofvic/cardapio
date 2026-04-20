@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Phone, Loader2, Pencil } from "lucide-react";
+import { User, Phone, Loader2, Pencil, CheckCircle2 } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { UserProfile } from "@/app/page";
@@ -45,13 +45,13 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10 && firestore && !initialUser && !loading) {
+    if (cleanPhone.length >= 10 && firestore && !initialUser && !loading && !searching) {
       handleLookup(cleanPhone);
     }
   }, [phone, firestore, initialUser, loading]);
 
   const handleLookup = async (phoneNumber: string) => {
-    if (searching || !firestore) return;
+    if (!firestore) return;
     setSearching(true);
     try {
       const docRef = doc(firestore, "users", phoneNumber);
@@ -102,27 +102,27 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
-      <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none bg-white">
-        <DialogHeader className="mb-6">
-          <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto relative">
+      <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8 border-none bg-white shadow-2xl">
+        <DialogHeader className="mb-8">
+          <div className="bg-primary/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-6 mx-auto relative animate-in zoom-in duration-500">
             {isEditing ? (
               <>
-                <User className="text-primary" size={32} />
-                <div className="absolute -top-1 -right-1 bg-white p-1.5 rounded-full shadow-sm border border-primary/20">
-                  <Pencil className="text-primary" size={12} />
+                <User className="text-primary" size={40} />
+                <div className="absolute -top-2 -right-2 bg-white p-2 rounded-full shadow-md border border-primary/20">
+                  <Pencil className="text-primary" size={14} />
                 </div>
               </>
             ) : (
-              <User className="text-primary" size={32} />
+              <User className="text-primary" size={40} />
             )}
           </div>
-          <DialogTitle className="text-2xl font-black text-center">
-            {isEditing ? "Editar Perfil" : "Identificação"}
+          <DialogTitle className="text-3xl font-black text-center tracking-tighter">
+            {isEditing ? "Seu Perfil" : "Identificação"}
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center text-muted-foreground mt-2 font-medium">
             {isEditing 
-              ? "Atualize seus dados sempre que necessário."
-              : "Informe seu telefone para carregarmos seu cadastro."}
+              ? "Atualize seus dados para um atendimento personalizado."
+              : "Informe seus dados para salvar seu histórico e endereços."}
           </DialogDescription>
         </DialogHeader>
 
@@ -137,7 +137,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(00) 00000-0000"
-                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0"
+                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset"
                 type="tel"
                 required
               />
@@ -158,8 +158,8 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
               <Input 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome..."
-                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0"
+                placeholder="Ex: Maria Silva"
+                className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-inset"
                 required
               />
             </div>
@@ -168,9 +168,14 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
           <Button 
             type="submit" 
             disabled={loading || !name || phone.replace(/\D/g, "").length < 10}
-            className="w-full h-14 rounded-full text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20"
+            className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all active:scale-95 uppercase tracking-tighter"
           >
-            {loading ? <Loader2 className="animate-spin" /> : (isEditing ? "Salvar Alterações" : "Confirmar")}
+            {loading ? <Loader2 className="animate-spin" /> : (
+              <div className="flex items-center gap-2">
+                {isEditing ? "Salvar Alterações" : "Confirmar Cadastro"}
+                {!loading && <CheckCircle2 size={18} />}
+              </div>
+            )}
           </Button>
         </form>
       </DialogContent>
