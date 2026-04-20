@@ -34,9 +34,10 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Fix for Next.js 15 sync-dynamic-apis error: unwrap promises with React.use()
-  const unwrappedParams = React.use(params);
-  const unwrappedSearchParams = React.use(searchParams);
+  // Use React.use() to unwrap the promises as required by Next.js 15
+  // We unwrap them but we don't necessarily use them if the app doesn't need dynamic routing params here
+  const _ = React.use(params);
+  const __ = React.use(searchParams);
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');

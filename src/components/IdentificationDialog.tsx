@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -30,10 +31,17 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
   const [searching, setSearching] = useState(false);
   const firestore = useFirestore();
 
-  // Auto-lookup when phone reaches 11 digits (Brazilian mobile standard)
+  useEffect(() => {
+    if (initialUser) {
+      setPhone(initialUser.phone);
+      setName(initialUser.name);
+    }
+  }, [initialUser, isOpen]);
+
+  // Auto-lookup when phone reaches 10 or 11 digits
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10 && firestore) {
+    if (cleanPhone.length >= 10 && firestore && cleanPhone !== initialUser?.phone) {
       handleLookup(cleanPhone);
     }
   }, [phone, firestore]);
@@ -50,7 +58,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
         setName(data.name);
       }
     } catch (error) {
-      // Handle lookup error silently
+      // Silent per guidelines
     } finally {
       setSearching(false);
     }
@@ -71,17 +79,15 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
       if (docSnap.exists()) {
         userProfile = docSnap.data() as UserProfile;
-        // Update name if it was changed in the input
         if (name !== userProfile.name) {
           userProfile.name = name;
           setDoc(docRef, userProfile, { merge: true });
         }
       } else {
-        // Create new profile
         userProfile = {
           name,
           phone: cleanPhone,
-          address: {
+          address: initialUser?.address || {
             street: "",
             number: "",
             neighborhood: "",
@@ -93,8 +99,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
       onIdentify(userProfile);
     } catch (error) {
-      // Fallback to local identification if Firestore fails
-      onIdentify({ name, phone: cleanPhone });
+      onIdentify({ name, phone: cleanPhone, address: initialUser?.address });
     } finally {
       setLoading(false);
     }
@@ -154,7 +159,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
           <Button 
             type="submit" 
-            disabled={loading || !name || phone.length < 10}
+            disabled={loading || !name || phone.replace(/\D/g, "").length < 10}
             className="w-full h-14 rounded-full text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20"
           >
             {loading ? <Loader2 className="animate-spin" /> : "Confirmar"}
