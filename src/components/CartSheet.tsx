@@ -104,16 +104,16 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
     }
   }, [user, isOpen]);
 
-  useEffect(() => {
+  const scrollToTop = () => {
     if (scrollAreaTopRef.current) {
       scrollAreaTopRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [step]);
+  };
 
   useEffect(() => {
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10 && firestore && !user) {
+    if (phone.replace(/\D/g, "").length >= 10 && firestore && !user) {
       const handleLookup = async () => {
+        const cleanPhone = phone.replace(/\D/g, "");
         if (searching) return;
         setSearching(true);
         try {
@@ -186,6 +186,11 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
       : locationCaptured
   );
 
+  const handleNextStep = () => {
+    setStep('payment');
+    setTimeout(scrollToTop, 100);
+  };
+
   const handleFinalize = async () => {
     if (!firestore) return;
 
@@ -247,193 +252,195 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
           </SheetHeader>
         </div>
 
-        <ScrollArea className="flex-grow px-6">
-          <div ref={scrollAreaTopRef} className="h-0 w-0" />
-          {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
-                <ShoppingBag className="text-muted-foreground" size={40} />
-              </div>
-              <p className="text-lg font-bold text-foreground mb-1">Sua cesta está vazia</p>
-              <Button 
-                variant="outline" 
-                className="mt-6 rounded-full border-primary text-primary hover:bg-primary/10"
-                onClick={onClose}
-              >
-                Ver Cardápio
-              </Button>
-            </div>
-          ) : step === 'cart' ? (
-            <div className="space-y-6 py-4 animate-in fade-in duration-300">
-              <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 group">
-                    <div className="relative h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-sm">
-                      <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
-                    </div>
-                    <div className="flex flex-col justify-between flex-grow">
-                      <div>
-                        <h4 className="font-bold text-foreground leading-tight">{item.name}</h4>
-                        <p className="text-primary font-bold text-sm">{formatCurrency(item.price)}</p>
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center bg-muted rounded-full p-1 gap-3">
-                          <button onClick={() => onUpdateQuantity(item.id, -1)} className="h-6 w-6 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white"><Minus size={14} /></button>
-                          <span className="text-xs font-bold">{item.quantity}</span>
-                          <button onClick={() => onUpdateQuantity(item.id, 1)} className="h-6 w-6 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white"><Plus size={14} /></button>
-                        </div>
-                        <button onClick={() => onRemove(item.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-primary/10 p-1.5 rounded-lg"><User className="text-primary" size={18} /></div>
-                  <h3 className="font-bold text-lg">Seus Dados</h3>
+        <ScrollArea className="flex-grow">
+          <div className="px-6 py-4">
+            <div ref={scrollAreaTopRef} className="h-0 w-0" />
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <ShoppingBag className="text-muted-foreground" size={40} />
                 </div>
-                
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Telefone (WhatsApp)</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                      <Input 
-                        placeholder="(00) 00000-0000" 
-                        className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0" 
-                        value={phone} 
-                        onChange={(e) => setPhone(e.target.value)}
-                        type="tel"
-                      />
-                      {searching && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-primary" size={16} />}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Seu Nome</Label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                      <Input 
-                        placeholder="Como podemos te chamar?" 
-                        className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold focus-visible:ring-primary focus-visible:ring-offset-0" 
-                        value={name} 
-                        onChange={(e) => setName(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-primary/10 p-1.5 rounded-lg"><MapPin className="text-primary" size={18} /></div>
-                  <h3 className="font-bold text-lg">Local de Entrega</h3>
-                </div>
-                
+                <p className="text-lg font-bold text-foreground mb-1">Sua cesta está vazia</p>
                 <Button 
                   variant="outline" 
-                  className={cn("w-full rounded-xl h-12 flex items-center gap-2 font-bold", locationCaptured ? "bg-primary/10 border-primary text-primary" : "border-primary text-primary")}
-                  onClick={handleGetLocation}
+                  className="mt-6 rounded-full border-primary text-primary hover:bg-primary/10"
+                  onClick={onClose}
                 >
-                  <MapPin size={18} />
-                  {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
+                  Ver Cardápio
                 </Button>
-
-                <div className="flex items-center space-x-2 px-1">
-                  <Checkbox id="not-home" checked={isNotHome} onCheckedChange={(c) => setIsNotHome(!!c)} />
-                  <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer">Não estou em casa (Informar endereço)</Label>
-                </div>
-
-                {isNotHome && (
-                  <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="col-span-3 space-y-1">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua / Avenida</Label>
-                        <Input placeholder="Nome da rua..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-offset-0" value={address.street} onChange={(e) => setAddress({...address, street: e.target.value})} />
+              </div>
+            ) : step === 'cart' ? (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-4">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex gap-4 group">
+                      <div className="relative h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-sm">
+                        <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                       </div>
-                      <div className="col-span-1 space-y-1">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
-                        <Input 
-                          placeholder="42" 
-                          className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-offset-0" 
-                          value={address.number} 
-                          onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
-                          inputMode="numeric"
-                        />
+                      <div className="flex flex-col justify-between flex-grow">
+                        <div>
+                          <h4 className="font-bold text-foreground leading-tight">{item.name}</h4>
+                          <p className="text-primary font-bold text-sm">{formatCurrency(item.price)}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center bg-muted rounded-full p-1 gap-3">
+                            <button onClick={() => onUpdateQuantity(item.id, -1)} className="h-6 w-6 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white"><Minus size={14} /></button>
+                            <span className="text-xs font-bold">{item.quantity}</span>
+                            <button onClick={() => onUpdateQuantity(item.id, 1)} className="h-6 w-6 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white"><Plus size={14} /></button>
+                          </div>
+                          <button onClick={() => onRemove(item.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
+                        </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro</Label>
-                        <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-offset-0" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
-                        <Input value="São Miguel - RN" disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
+                  ))}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg"><User className="text-primary" size={18} /></div>
+                    <h3 className="font-bold text-lg">Seus Dados</h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Telefone (WhatsApp)</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                        <Input 
+                          placeholder="(00) 00000-0000" 
+                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold" 
+                          value={phone} 
+                          onChange={(e) => setPhone(e.target.value)}
+                          type="tel"
+                        />
+                        {searching && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-primary" size={16} />}
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
-                      <Input 
-                        placeholder="Ex: Próximo ao mercado..." 
-                        className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-offset-0" 
-                        value={address.reference} 
-                        onChange={(e) => setAddress({...address, reference: e.target.value})} 
-                      />
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Seu Nome</Label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                        <Input 
+                          placeholder="Como podemos te chamar?" 
+                          className="h-12 pl-11 rounded-xl bg-muted/30 border-none font-bold" 
+                          value={name} 
+                          onChange={(e) => setName(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-primary/10 p-1.5 rounded-lg"><Ticket className="text-primary" size={18} /></div>
-                  <h3 className="font-bold text-lg">Cupom de Desconto</h3>
                 </div>
-                <div className="relative">
-                  <Input placeholder="ADICIONAR CUPOM" className="h-14 rounded-2xl bg-muted/30 border-none font-bold uppercase focus-visible:ring-primary focus-visible:ring-offset-0" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
-                  <button onClick={handleApplyCoupon} className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold">APLICAR</button>
-                </div>
-                {appliedCoupon && <p className="text-xs font-bold text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Cupom {appliedCoupon} aplicado!</p>}
-              </div>
-            </div>
-          ) : (
-            <div className="py-4 space-y-6 animate-in slide-in-from-bottom duration-500 overflow-x-hidden">
-              <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
-                <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
-              </div>
 
-              <div className="space-y-4">
-                <h3 className="font-bold text-lg">Escolha como pagar</h3>
-                <div className="flex p-1 bg-muted rounded-2xl">
-                  <button onClick={() => {setPaymentType('online'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'online' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Pagar Online</button>
-                  <button onClick={() => {setPaymentType('delivery'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'delivery' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Na Entrega</button>
-                </div>
-              </div>
+                <Separator />
 
-              <div className="animate-in fade-in slide-in-from-right-full duration-500 fill-mode-both" key={paymentType}>
-                <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment} className="grid gap-3">
-                  {filteredMethods.map((method) => (
-                    <Label key={method.id} htmlFor={method.id} className={cn("flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer", selectedPayment === method.id ? "border-primary bg-primary/5" : "border-muted")}>
-                      <div className="flex items-center gap-3">
-                        <div className={cn("p-2 rounded-xl", selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground")}><method.icon size={20} /></div>
-                        <span className="font-bold">{method.label}</span>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg"><MapPin className="text-primary" size={18} /></div>
+                    <h3 className="font-bold text-lg">Local de Entrega</h3>
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className={cn("w-full rounded-xl h-12 flex items-center gap-2 font-bold", locationCaptured ? "bg-primary/10 border-primary text-primary" : "border-primary text-primary")}
+                    onClick={handleGetLocation}
+                  >
+                    <MapPin size={18} />
+                    {locationCaptured ? "Localização Capturada" : "Usar minha localização atual"}
+                  </Button>
+
+                  <div className="flex items-center space-x-2 px-1">
+                    <Checkbox id="not-home" checked={isNotHome} onCheckedChange={(c) => setIsNotHome(!!c)} />
+                    <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer">Não estou em casa (Informar endereço)</Label>
+                  </div>
+
+                  {isNotHome && (
+                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="col-span-3 space-y-1">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua / Avenida</Label>
+                          <Input placeholder="Nome da rua..." className="h-12 rounded-xl bg-muted/30 border-none" value={address.street} onChange={(e) => setAddress({...address, street: e.target.value})} />
+                        </div>
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
+                          <Input 
+                            placeholder="42" 
+                            className="h-12 rounded-xl bg-muted/30 border-none" 
+                            value={address.number} 
+                            onChange={(e) => setAddress({...address, number: e.target.value.replace(/\D/g, "")})}
+                            inputMode="numeric"
+                          />
+                        </div>
                       </div>
-                      <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
-                    </Label>
-                  ))}
-                </RadioGroup>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bairro</Label>
+                          <Input placeholder="Seu bairro..." className="h-12 rounded-xl bg-muted/30 border-none" value={address.neighborhood} onChange={(e) => setAddress({...address, neighborhood: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Cidade</Label>
+                          <Input value="São Miguel - RN" disabled className="h-12 rounded-xl bg-muted/10 border-none font-bold" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Ponto de Referência</Label>
+                        <Input 
+                          placeholder="Ex: Próximo ao mercado..." 
+                          className="h-12 rounded-xl bg-muted/30 border-none" 
+                          value={address.reference} 
+                          onChange={(e) => setAddress({...address, reference: e.target.value})} 
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg"><Ticket className="text-primary" size={18} /></div>
+                    <h3 className="font-bold text-lg">Cupom de Desconto</h3>
+                  </div>
+                  <div className="relative">
+                    <Input placeholder="ADICIONAR CUPOM" className="h-14 rounded-2xl bg-muted/30 border-none font-bold uppercase" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
+                    <button onClick={handleApplyCoupon} className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold">APLICAR</button>
+                  </div>
+                  {appliedCoupon && <p className="text-xs font-bold text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Cupom {appliedCoupon} aplicado!</p>}
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                  <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Resumo</p>
+                  <p className="text-sm text-muted-foreground">O total do seu pedido é <span className="text-foreground font-black">{formatCurrency(total)}</span></p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-bold text-lg">Escolha como pagar</h3>
+                  <div className="flex p-1 bg-muted rounded-2xl">
+                    <button onClick={() => {setPaymentType('online'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'online' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Pagar Online</button>
+                    <button onClick={() => {setPaymentType('delivery'); setSelectedPayment("")}} className={cn("flex-1 py-3 rounded-xl text-sm font-bold transition-all", paymentType === 'delivery' ? "bg-white text-primary shadow-sm" : "text-muted-foreground")}>Na Entrega</button>
+                  </div>
+                </div>
+
+                <div className="animate-in fade-in slide-in-from-right-full duration-500 fill-mode-both" key={paymentType}>
+                  <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment} className="grid gap-3">
+                    {filteredMethods.map((method) => (
+                      <Label key={method.id} htmlFor={method.id} className={cn("flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer", selectedPayment === method.id ? "border-primary bg-primary/5" : "border-muted")}>
+                        <div className="flex items-center gap-3">
+                          <div className={cn("p-2 rounded-xl", selectedPayment === method.id ? "bg-primary text-white" : "bg-muted text-muted-foreground")}><method.icon size={20} /></div>
+                          <span className="font-bold">{method.label}</span>
+                        </div>
+                        <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </div>
+            )}
+          </div>
         </ScrollArea>
 
         {items.length > 0 && (
@@ -447,7 +454,7 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
             </div>
             <SheetFooter>
               {step === 'cart' ? (
-                <Button disabled={!isFormValid} onClick={() => setStep('payment')} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Ir para Pagamento</Button>
+                <Button disabled={!isFormValid} onClick={handleNextStep} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Ir para Pagamento</Button>
               ) : (
                 <Button disabled={!selectedPayment} onClick={handleFinalize} className="w-full h-14 rounded-full text-lg font-bold bg-primary text-white">Finalizar Pedido</Button>
               )}
