@@ -91,25 +91,25 @@ export function CitySelectionDialog({ isOpen, onOpenChange, onCitySelect }: City
             </div>
           ) : (
             <div className="py-4 animate-in zoom-in-95 fade-in duration-300">
-              <div className="bg-amber-50 border border-amber-200 p-6 rounded-[2rem] mb-6 flex flex-col items-center text-center">
-                <div className="bg-amber-100 p-3 rounded-full mb-4">
+              <div className="bg-amber-50 border border-amber-200 p-6 rounded-[2rem] mb-6 flex flex-col items-center text-center shadow-inner animate-in slide-in-from-top-4 duration-500">
+                <div className="bg-amber-100 p-3 rounded-full mb-4 animate-bounce">
                   <Info className="text-amber-600" size={28} />
                 </div>
                 <h4 className="font-black text-amber-900 mb-2 uppercase tracking-tighter">Aviso de Entrega</h4>
-                <p className="text-sm text-amber-800 font-medium leading-relaxed">
+                <p className="text-sm text-amber-800 font-medium leading-relaxed px-2">
                   Para <span className="font-black">{selectedTemp}</span>, realizamos rotas de entrega dos produtos nas respectivas datas das rotas semanais.
                 </p>
               </div>
               <div className="flex gap-3">
                 <Button 
                   variant="outline" 
-                  className="flex-1 h-14 rounded-full font-bold border-muted-foreground/20"
+                  className="flex-1 h-14 rounded-full font-bold border-muted-foreground/20 hover:bg-muted"
                   onClick={() => setSelectedTemp(null)}
                 >
                   Voltar
                 </Button>
                 <Button 
-                  className="flex-1 h-14 rounded-full font-black bg-primary text-white shadow-lg shadow-primary/20"
+                  className="flex-1 h-14 rounded-full font-black bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
                   onClick={confirmSelection}
                 >
                   Continuar
