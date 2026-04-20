@@ -28,13 +28,15 @@ export type UserProfile = {
   };
 };
 
-export default function HarvestBitesApp(props: { 
-  params: Promise<any>; 
-  searchParams: Promise<any> 
-}) {
-  // Fix for Next.js 15 sync-dynamic-apis error
-  const params = React.use(props.params);
-  const searchParams = React.use(props.searchParams);
+interface PageProps {
+  params: Promise<any>;
+  searchParams: Promise<any>;
+}
+
+export default function HarvestBitesApp({ params, searchParams }: PageProps) {
+  // Fix for Next.js 15 sync-dynamic-apis error: unwrap promises with React.use()
+  const unwrappedParams = React.use(params);
+  const unwrappedSearchParams = React.use(searchParams);
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');

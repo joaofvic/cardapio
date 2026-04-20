@@ -468,4 +468,3 @@ export function CartSheet({ isOpen, onClose, items, user, onIdentify, onUpdateQu
     </Sheet>
   );
 }
-
