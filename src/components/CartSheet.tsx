@@ -184,11 +184,16 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     navigator.geolocation.getCurrentPosition((position) => {
       setLocationCaptured(true);
       if (!isNotHome) {
-        setAddress(prev => ({ ...prev, street: 'Localização atual capturada' }));
+        setAddress(prev => ({ 
+          ...prev, 
+          street: 'Localização atual capturada',
+          number: 'SN',
+          neighborhood: 'GPS'
+        }));
       }
       toast({
         title: "Localização Capturada!",
-        description: "Por favor, informe agora o número da residência e o bairro.",
+        description: "Localização identificada com sucesso.",
       });
     }, (error) => {
       let msg = "Não foi possível capturar sua posição. Por favor, informe o endereço manualmente.";
@@ -207,10 +212,10 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   const isFormValid = name.trim().length > 2 && 
                     phone.replace(/\D/g, "").length >= 10 && 
-                    (isNotHome || locationCaptured) &&
-                    address.street.trim() !== '' &&
-                    address.number.trim() !== '' &&
-                    address.neighborhood.trim() !== '';
+                    (isNotHome ? 
+                      (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '') : 
+                      locationCaptured
+                    );
 
   const handleNextStep = () => {
     setStep('payment');
@@ -381,7 +386,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                     <Label htmlFor="not-home" className="text-sm font-bold cursor-pointer">Não estou em casa (Informar endereço)</Label>
                   </div>
 
-                  {(isNotHome || locationCaptured) && (
+                  {isNotHome && (
                     <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="grid grid-cols-4 gap-3">
                         <div className="col-span-3 space-y-1">
@@ -391,7 +396,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                             className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary focus-visible:ring-inset focus-visible:ring-offset-0" 
                             value={address.street} 
                             onChange={(e) => setAddress({...address, street: e.target.value})}
-                            disabled={locationCaptured && !isNotHome}
                           />
                         </div>
                         <div className="col-span-1 space-y-1">
