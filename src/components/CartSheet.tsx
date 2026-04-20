@@ -32,7 +32,8 @@ import {
   Loader2,
   ChevronDown,
   Info,
-  Calendar
+  Calendar,
+  Truck
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -186,7 +187,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
     navigator.geolocation.getCurrentPosition((position) => {
       setLocationCaptured(true);
-      // Simplify GPS capture for this business requirement
       setAddress(prev => ({ 
         ...prev, 
         street: 'Localização GPS',
@@ -285,12 +285,18 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                 <div className="flex gap-2">
                   <Info className="text-amber-600 shrink-0" size={16} />
                   <p className="text-[11px] font-bold text-amber-900 leading-tight">
-                    Aviso: Para <span className="font-black">{selectedCity}</span>, realizamos rotas de entrega dos produtos nas respectivas datas das rotas semanais.
+                    Aviso: Para <span className="font-black">{selectedCity}</span>, realizamos rotas de entrega semanais.
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 pl-6">
-                  <Calendar size={12} className="text-amber-700" />
-                  <span className="text-[10px] font-black text-amber-900 uppercase">Pedidos aceitos até Quinta, 16/12</span>
+                <div className="space-y-1 pl-6">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={12} className="text-amber-700" />
+                    <span className="text-[10px] font-black text-amber-900 uppercase">Pedidos aceitos até Quinta, 16/12</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Truck size={12} className="text-amber-700" />
+                    <span className="text-[10px] font-black text-amber-900 uppercase">Próxima entrega: Sáb, 18/12</span>
+                  </div>
                 </div>
               </div>
             )}
