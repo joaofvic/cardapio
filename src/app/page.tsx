@@ -1,8 +1,9 @@
 
 "use client";
 
+import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -10,6 +11,7 @@ import { MealCard } from "@/components/MealCard";
 import { BottomNav } from "@/components/BottomNav";
 import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
+import { IdentificationDialog } from "@/components/IdentificationDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -26,13 +28,21 @@ export type UserProfile = {
   };
 };
 
-export default function HarvestBitesApp() {
+export default function HarvestBitesApp(props: { 
+  params: Promise<any>; 
+  searchParams: Promise<any> 
+}) {
+  // Fix for Next.js 15 sync-dynamic-apis error
+  const params = React.use(props.params);
+  const searchParams = React.use(props.searchParams);
+
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('menu');
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   
   const { toast } = useToast();
@@ -102,21 +112,36 @@ export default function HarvestBitesApp() {
     setUser(profile);
     localStorage.setItem('harvest_bites_user', JSON.stringify(profile));
     toast({
-      title: "Identificado!",
-      description: `Olá, ${profile.name.split(' ')[0]}!`,
+      title: profile.name ? "Perfil Atualizado!" : "Identificado!",
+      description: `Olá, ${profile.name?.split(' ')[0] || 'Cliente'}!`,
     });
+    setIsProfileOpen(false);
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
       {/* Header */}
-      <header className="flex justify-between items-center mb-8">
+      <header className="flex justify-between items-start mb-8">
         <div>
           <h2 className="text-primary font-black text-2xl tracking-tighter">HARVEST BITES</h2>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Refeições Saudáveis & Prontas
           </p>
         </div>
+        <button 
+          onClick={() => setIsProfileOpen(true)}
+          className="bg-white p-2.5 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50"
+        >
+          <div className="bg-primary/10 p-1.5 rounded-xl">
+            <User size={20} />
+          </div>
+          <div className="text-left hidden xs:block pr-1">
+            <p className="text-[9px] font-black uppercase text-muted-foreground leading-none mb-0.5">Perfil</p>
+            <p className="text-xs font-bold text-foreground leading-none">
+              {user ? user.name.split(' ')[0] : 'Entrar'}
+            </p>
+          </div>
+        </button>
       </header>
 
       {/* Main Content */}
@@ -185,6 +210,13 @@ export default function HarvestBitesApp() {
         onIdentify={handleIdentifyUser}
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}
+      />
+
+      <IdentificationDialog 
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onIdentify={handleIdentifyUser}
+        initialUser={user || undefined}
       />
 
       <BottomNav 
