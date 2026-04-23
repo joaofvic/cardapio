@@ -14,6 +14,7 @@ import { CartSheet } from "@/components/CartSheet";
 import { IdentificationDialog } from "@/components/IdentificationDialog";
 import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 import { ComboConfiguratorDialog } from "@/components/ComboConfiguratorDialog";
+import { ComboTypeSelectionDialog } from "@/components/ComboTypeSelectionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -49,6 +50,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCityDialogOpen, setIsCityDialogOpen] = useState(false);
   const [isComboConfigOpen, setIsComboConfigOpen] = useState(false);
+  const [isComboTypeDialogOpen, setIsComboTypeDialogOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   
@@ -224,7 +226,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
                 key={cat.id}
                 onClick={() => {
                   if (cat.id === 'Combos') {
-                    setIsComboConfigOpen(true);
+                    setIsComboTypeDialogOpen(true);
                   } else {
                     setActiveCategory(cat.id);
                   }
@@ -260,6 +262,18 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         isOpen={!!selectedMeal}
         onClose={() => setSelectedMeal(null)}
         onAddToCart={handleAddToCart}
+      />
+
+      <ComboTypeSelectionDialog
+        isOpen={isComboTypeDialogOpen}
+        onClose={() => setIsComboTypeDialogOpen(false)}
+        onSelectManual={() => setIsComboConfigOpen(true)}
+        onSelectAI={() => {
+          toast({
+            title: "Plano Alimentar AI",
+            description: "Esta funcionalidade estará disponível em breve!",
+          });
+        }}
       />
 
       <ComboConfiguratorDialog 
