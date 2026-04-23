@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DairyFreeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-destructive">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-destructive">
     <path d="M16.5 14c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2Z" />
     <path d="M7 16a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" />
     <path d="M12 2v3" />
@@ -21,7 +21,7 @@ const DairyFreeIcon = () => (
 );
 
 const GlutenFreeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-destructive">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-destructive">
     <path d="m3 3 18 18" />
     <path d="M10.5 4.5 12 6l1.5-1.5" />
     <path d="M12 6v12" />
@@ -34,7 +34,7 @@ const GlutenFreeIcon = () => (
 );
 
 const SugarFreeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-destructive">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-destructive">
     <path d="m3 3 18 18" />
     <path d="M16 6h2v2h-2z" />
     <path d="M12 6h2v2h-2z" />
@@ -65,90 +65,90 @@ export function MealCard({ meal, onAddToCart, onOpenDetails }: MealCardProps) {
           className="object-cover transition-transform duration-500 group-hover:scale-110"
           data-ai-hint="meal food"
         />
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          <Badge className="bg-white/90 text-primary hover:bg-white/100 border-none font-bold">
+        <div className="absolute top-3 left-3 flex flex-col gap-3">
+          <Badge className="bg-white/95 text-primary hover:bg-white/100 border-none font-black shadow-md px-3 py-1 uppercase tracking-wider text-[10px]">
             {meal.category}
           </Badge>
           
-          <div className="flex gap-1">
+          <div className="flex gap-2">
             <TooltipProvider>
               {meal.isDairyFree && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="bg-white/90 p-1.5 rounded-full shadow-sm">
+                    <div className="bg-white/95 p-2 rounded-2xl shadow-lg border border-destructive/10 animate-in zoom-in duration-300">
                       <DairyFreeIcon />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent><p className="text-xs font-bold">Sem Leite</p></TooltipContent>
+                  <TooltipContent side="right"><p className="text-xs font-black uppercase">Sem Leite</p></TooltipContent>
                 </Tooltip>
               )}
               {meal.isGlutenFree && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="bg-white/90 p-1.5 rounded-full shadow-sm">
+                    <div className="bg-white/95 p-2 rounded-2xl shadow-lg border border-destructive/10 animate-in zoom-in duration-300 delay-75">
                       <GlutenFreeIcon />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent><p className="text-xs font-bold">Sem Glúten</p></TooltipContent>
+                  <TooltipContent side="right"><p className="text-xs font-black uppercase">Sem Glúten</p></TooltipContent>
                 </Tooltip>
               )}
               {meal.isSugarFree && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="bg-white/90 p-1.5 rounded-full shadow-sm">
+                    <div className="bg-white/95 p-2 rounded-2xl shadow-lg border border-destructive/10 animate-in zoom-in duration-300 delay-150">
                       <SugarFreeIcon />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent><p className="text-xs font-bold">Sem Açúcar</p></TooltipContent>
+                  <TooltipContent side="right"><p className="text-xs font-black uppercase">Sem Açúcar</p></TooltipContent>
                 </Tooltip>
               )}
             </TooltipProvider>
           </div>
         </div>
-        <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 px-2 py-0.5 rounded-full text-[10px] font-bold text-foreground">
-          <Star size={12} className="fill-secondary text-secondary" />
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 px-3 py-1 rounded-full text-[11px] font-black text-foreground shadow-md">
+          <Star size={14} className="fill-secondary text-secondary" />
           {meal.rating || 4.5}
         </div>
       </div>
-      <CardContent className="p-4 bg-white">
+      <CardContent className="p-5 bg-white">
         <div className="flex justify-between items-start gap-2 mb-2">
-          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+          <h3 className="font-black text-lg leading-tight group-hover:text-primary transition-colors tracking-tight">
             {meal.name}
           </h3>
-          <span className="font-bold text-primary text-lg">
+          <span className="font-black text-primary text-lg whitespace-nowrap">
             R$ {meal.price.toFixed(2).replace('.', ',')}
           </span>
         </div>
         
-        <p className="text-muted-foreground text-sm line-clamp-2 mb-4 leading-relaxed">
+        <p className="text-muted-foreground text-sm line-clamp-2 mb-5 leading-relaxed font-medium">
           {meal.description}
         </p>
 
         <div className="flex items-center justify-between mt-auto">
-          <div className="flex gap-3 text-[10px] font-bold text-muted-foreground">
+          <div className="flex gap-4 text-[10px] font-black text-muted-foreground tracking-tighter">
             <div className="flex flex-col">
-              <span className="text-foreground">{meal.protein}g</span>
+              <span className="text-foreground text-xs">{meal.protein}g</span>
               <span>PROTEÍNA</span>
             </div>
-            <div className="flex flex-col border-l border-muted pl-3">
-              <span className="text-foreground">{meal.carbs}g</span>
+            <div className="flex flex-col border-l border-muted pl-4">
+              <span className="text-foreground text-xs">{meal.carbs}g</span>
               <span>CARBO</span>
             </div>
-            <div className="flex flex-col border-l border-muted pl-3">
-              <span className="text-foreground">{meal.calories}</span>
+            <div className="flex flex-col border-l border-muted pl-4">
+              <span className="text-foreground text-xs">{meal.calories}</span>
               <span>CALORIAS</span>
             </div>
           </div>
           
           <Button 
             size="icon" 
-            className="rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+            className="rounded-2xl h-11 w-11 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-110 active:scale-90"
             onClick={(e) => {
               e.stopPropagation();
               onAddToCart(meal);
             }}
           >
-            <Plus size={20} />
+            <Plus size={24} strokeWidth={3} />
           </Button>
         </div>
       </CardContent>
