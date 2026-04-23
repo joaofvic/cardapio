@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { CartItem } from "@/app/types/meal";
 import { UserProfile } from "@/app/page";
 import {
@@ -162,6 +162,14 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
+  const changeValue = useMemo(() => {
+    if (!needsChange || !changeFor) return 0;
+    const cleanValue = changeFor.replace(/[^\d.,]/g, "").replace(",", ".");
+    const paidAmount = parseFloat(cleanValue);
+    if (isNaN(paidAmount) || paidAmount <= total) return 0;
+    return paidAmount - total;
+  }, [needsChange, changeFor, total]);
+
   const handleApplyCoupon = () => {
     if (couponCode.toUpperCase() === 'ADAS') {
       setAppliedCoupon('ADAS');
@@ -266,7 +274,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2.5rem] flex flex-col p-0 overflow-hidden shadow-2xl animate-in slide-in-from-right duration-[3000ms] ease-in-out">
+      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden shadow-2xl animate-in slide-in-from-right duration-[3000ms] ease-in-out">
         <div className="p-6 pb-2 shrink-0">
           <SheetHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -526,17 +534,30 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                       </div>
                       
                       {needsChange && (
-                        <div className="space-y-2 pl-8 animate-in zoom-in-95 duration-300">
-                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Troco para quanto?</Label>
-                          <div className="relative">
-                            <Banknote className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                            <Input 
-                              placeholder="Ex: R$ 100,00" 
-                              className="h-12 pl-11 rounded-xl bg-white border-none font-black focus-visible:ring-primary shadow-sm" 
-                              value={changeFor}
-                              onChange={(e) => setChangeFor(e.target.value)}
-                            />
+                        <div className="space-y-4 pl-8 animate-in zoom-in-95 duration-300">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Troco para quanto?</Label>
+                            <div className="relative">
+                              <Banknote className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                              <Input 
+                                placeholder="Ex: R$ 100,00" 
+                                className="h-12 pl-11 rounded-xl bg-white border-none font-black focus-visible:ring-primary shadow-sm" 
+                                value={changeFor}
+                                onChange={(e) => setChangeFor(e.target.value)}
+                              />
+                            </div>
                           </div>
+
+                          {changeValue > 0 && (
+                            <div className="bg-primary/10 p-4 rounded-2xl border border-primary/20 animate-in slide-in-from-top-2 duration-500">
+                              <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Seu troco será de</p>
+                              <p className="text-xl font-black text-foreground">{formatCurrency(changeValue)}</p>
+                            </div>
+                          )}
+
+                          {changeFor && parseFloat(changeFor.replace(/[^\d.,]/g, "").replace(",", ".")) <= total && (
+                            <p className="text-[10px] font-bold text-destructive px-1">O valor deve ser maior que {formatCurrency(total)}</p>
+                          )}
                         </div>
                       )}
                     </div>
