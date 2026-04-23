@@ -70,6 +70,8 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   const [selectedPayment, setSelectedPayment] = useState<string>("");
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
+  const [needsChange, setNeedsChange] = useState(false);
+  const [changeFor, setChangeFor] = useState("");
   
   const scrollAreaTopRef = useRef<HTMLDivElement>(null);
 
@@ -509,6 +511,36 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                       </Label>
                     ))}
                   </RadioGroup>
+
+                  {/* Campo de Troco condicional para Dinheiro */}
+                  {selectedPayment === 'cash' && (
+                    <div className="mt-6 p-6 bg-muted/30 rounded-[2.5rem] space-y-4 border border-border/10 animate-in fade-in slide-in-from-top-4 duration-500">
+                      <div className="flex items-center space-x-3 px-1">
+                        <Checkbox 
+                          id="needs-change" 
+                          checked={needsChange} 
+                          onCheckedChange={(c) => setNeedsChange(!!c)} 
+                          className="h-5 w-5 rounded-md"
+                        />
+                        <Label htmlFor="needs-change" className="text-sm font-black text-foreground cursor-pointer uppercase tracking-tight">Precisa de troco?</Label>
+                      </div>
+                      
+                      {needsChange && (
+                        <div className="space-y-2 pl-8 animate-in zoom-in-95 duration-300">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Troco para quanto?</Label>
+                          <div className="relative">
+                            <Banknote className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                            <Input 
+                              placeholder="Ex: R$ 100,00" 
+                              className="h-12 pl-11 rounded-xl bg-white border-none font-black focus-visible:ring-primary shadow-sm" 
+                              value={changeFor}
+                              onChange={(e) => setChangeFor(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
