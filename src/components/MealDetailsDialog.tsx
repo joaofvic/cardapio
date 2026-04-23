@@ -12,6 +12,43 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, CheckCircle2 } from "lucide-react";
 
+const DairyFreeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-destructive">
+    <path d="M16.5 14c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2Z" />
+    <path d="M7 16a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" />
+    <path d="M12 2v3" />
+    <path d="M12 11c0 3.3-2.7 6-6 6" />
+    <path d="m3 3 18 18" />
+    <path d="M11 11c.4.7.7 1.5.9 2.4" />
+    <path d="M12 11c3.3 0 6 2.7 6 6" />
+  </svg>
+);
+
+const GlutenFreeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-destructive">
+    <path d="m3 3 18 18" />
+    <path d="M10.5 4.5 12 6l1.5-1.5" />
+    <path d="M12 6v12" />
+    <path d="M10.5 19.5 12 18l1.5 1.5" />
+    <path d="m15.5 14-2.5-2.5" />
+    <path d="m8.5 10 2.5 2.5" />
+    <path d="m8.5 14 2.5-2.5" />
+    <path d="m15.5 10-2.5 2.5" />
+  </svg>
+);
+
+const SugarFreeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-destructive">
+    <path d="m3 3 18 18" />
+    <path d="M16 6h2v2h-2z" />
+    <path d="M12 6h2v2h-2z" />
+    <path d="M8 6h2v2H8z" />
+    <path d="M16 10h2v2h-2z" />
+    <path d="M12 10h2v2h-2z" />
+    <path d="M8 10h2v2H8z" />
+  </svg>
+);
+
 interface MealDetailsDialogProps {
   meal: Meal | null;
   isOpen: boolean;
@@ -54,9 +91,35 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
             </div>
           </div>
 
-          <p className="text-muted-foreground leading-relaxed mb-8">
+          <p className="text-muted-foreground leading-relaxed mb-6">
             {meal.description}
           </p>
+
+          {(meal.isDairyFree || meal.isGlutenFree || meal.isSugarFree) && (
+            <div className="flex gap-4 mb-8 p-4 bg-destructive/5 rounded-2xl border border-destructive/10">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-destructive vertical-text flex items-center h-full">Restrições</h4>
+              <div className="flex gap-4">
+                {meal.isDairyFree && (
+                  <div className="flex flex-col items-center gap-1">
+                    <DairyFreeIcon />
+                    <span className="text-[9px] font-black uppercase text-destructive">Sem Leite</span>
+                  </div>
+                )}
+                {meal.isGlutenFree && (
+                  <div className="flex flex-col items-center gap-1">
+                    <GlutenFreeIcon />
+                    <span className="text-[9px] font-black uppercase text-destructive">Sem Trigo</span>
+                  </div>
+                )}
+                {meal.isSugarFree && (
+                  <div className="flex flex-col items-center gap-1">
+                    <SugarFreeIcon />
+                    <span className="text-[9px] font-black uppercase text-destructive">Sem Açúcar</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="bg-muted/50 p-6 rounded-2xl mb-8">
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-foreground/70">Informações Nutricionais</h4>

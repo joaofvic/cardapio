@@ -9,6 +9,9 @@ export interface Meal {
   calories: number;
   imageUrl: string;
   rating?: number;
+  isDairyFree?: boolean;
+  isGlutenFree?: boolean;
+  isSugarFree?: boolean;
 }
 
 export interface CartItem extends Meal {

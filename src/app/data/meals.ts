@@ -17,7 +17,10 @@ export const MEALS: Meal[] = [
     carbs: 12,
     calories: 320,
     imageUrl: getImg('meal-chicken-1'),
-    rating: 4.8
+    rating: 4.8,
+    isDairyFree: true,
+    isGlutenFree: true,
+    isSugarFree: true
   },
   {
     id: '2',
@@ -41,7 +44,8 @@ export const MEALS: Meal[] = [
     carbs: 38,
     calories: 550,
     imageUrl: getImg('meal-beef-1'),
-    rating: 4.9
+    rating: 4.9,
+    isGlutenFree: true
   },
   {
     id: '4',
@@ -53,7 +57,8 @@ export const MEALS: Meal[] = [
     carbs: 55,
     calories: 520,
     imageUrl: getImg('meal-beef-2'),
-    rating: 4.7
+    rating: 4.7,
+    isDairyFree: true
   },
   {
     id: '5',
@@ -65,7 +70,10 @@ export const MEALS: Meal[] = [
     carbs: 15,
     calories: 380,
     imageUrl: getImg('meal-fish-1'),
-    rating: 4.9
+    rating: 4.9,
+    isDairyFree: true,
+    isGlutenFree: true,
+    isSugarFree: true
   },
   {
     id: '6',
@@ -77,7 +85,8 @@ export const MEALS: Meal[] = [
     carbs: 10,
     calories: 290,
     imageUrl: getImg('meal-fish-2'),
-    rating: 4.5
+    rating: 4.5,
+    isGlutenFree: true
   },
   {
     id: '7',
@@ -89,7 +98,10 @@ export const MEALS: Meal[] = [
     carbs: 58,
     calories: 410,
     imageUrl: getImg('meal-veggie-1'),
-    rating: 4.5
+    rating: 4.5,
+    isDairyFree: true,
+    isGlutenFree: true,
+    isSugarFree: true
   },
   {
     id: '8',
@@ -101,6 +113,9 @@ export const MEALS: Meal[] = [
     carbs: 32,
     calories: 280,
     imageUrl: getImg('meal-veggie-2'),
-    rating: 4.4
+    rating: 4.4,
+    isDairyFree: true,
+    isGlutenFree: true,
+    isSugarFree: true
   }
 ];
