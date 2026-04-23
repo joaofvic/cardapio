@@ -98,10 +98,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
       }
       return [...prev, { ...meal, quantity: 1 }];
     });
-    toast({
-      title: "Adicionado à Cesta",
-      description: `${meal.name} está pronto para checkout.`,
-    });
+    // Toast removed per user request for a cleaner experience
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
