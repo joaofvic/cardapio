@@ -8,6 +8,19 @@ const getImg = (id: string) => {
 
 export const MEALS: Meal[] = [
   {
+    id: 'combo-1',
+    name: 'Combo Performance Semanal',
+    category: 'Combo',
+    description: 'Kit com 5 refeições variadas de alto teor proteico, ideal para quem busca praticidade e resultados.',
+    price: 159.90,
+    protein: 180,
+    carbs: 220,
+    calories: 2400,
+    imageUrl: getImg('meal-combo-1'),
+    rating: 5.0,
+    isSugarFree: true
+  },
+  {
     id: '1',
     name: 'Lemon Herb Chicken',
     category: 'Chicken',

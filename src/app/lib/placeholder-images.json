@@ -53,6 +53,12 @@
       "description": "Tilapia with Herbs",
       "imageUrl": "https://picsum.photos/seed/fish2/400/300",
       "imageHint": "fish fillet"
+    },
+    {
+      "id": "meal-combo-1",
+      "description": "Combo Performance Semanal",
+      "imageUrl": "https://picsum.photos/seed/combo1/400/300",
+      "imageHint": "meal prep boxes"
     }
   ]
 }

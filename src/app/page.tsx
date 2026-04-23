@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -67,6 +66,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
 
   const categories = [
     { id: 'Todos', label: 'Todos' },
+    { id: 'Combos', label: 'Combo Semanal' },
     { id: 'Frango', label: 'Frango' },
     { id: 'Carne', label: 'Carne' },
     { id: 'Peixe', label: 'Peixe' },
@@ -77,6 +77,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
     return MEALS.filter(meal => {
       const categoryMap: Record<string, string> = {
         'Todos': 'All',
+        'Combos': 'Combo',
         'Frango': 'Chicken',
         'Carne': 'Beef',
         'Peixe': 'Fish',
@@ -98,7 +99,6 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
       }
       return [...prev, { ...meal, quantity: 1 }];
     });
-    // Toast removed per user request for a cleaner experience
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {

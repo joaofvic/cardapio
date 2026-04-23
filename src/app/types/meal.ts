@@ -1,7 +1,7 @@
 export interface Meal {
   id: string;
   name: string;
-  category: 'Chicken' | 'Beef' | 'Veggie' | 'Fish';
+  category: 'Chicken' | 'Beef' | 'Veggie' | 'Fish' | 'Combo';
   description: string;
   price: number;
   protein: number;
