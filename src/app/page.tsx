@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -12,6 +13,7 @@ import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { IdentificationDialog } from "@/components/IdentificationDialog";
 import { CitySelectionDialog } from "@/components/CitySelectionDialog";
+import { ComboConfiguratorDialog } from "@/components/ComboConfiguratorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -46,6 +48,7 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCityDialogOpen, setIsCityDialogOpen] = useState(false);
+  const [isComboConfigOpen, setIsComboConfigOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   
@@ -219,7 +222,13 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
+                onClick={() => {
+                  if (cat.id === 'Combos') {
+                    setIsComboConfigOpen(true);
+                  } else {
+                    setActiveCategory(cat.id);
+                  }
+                }}
                 className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
                   activeCategory === cat.id 
                   ? 'bg-primary text-white shadow-lg shadow-primary/20' 
@@ -250,6 +259,12 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         meal={selectedMeal}
         isOpen={!!selectedMeal}
         onClose={() => setSelectedMeal(null)}
+        onAddToCart={handleAddToCart}
+      />
+
+      <ComboConfiguratorDialog 
+        isOpen={isComboConfigOpen}
+        onClose={() => setIsComboConfigOpen(false)}
         onAddToCart={handleAddToCart}
       />
 
