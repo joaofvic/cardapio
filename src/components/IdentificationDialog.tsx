@@ -16,6 +16,8 @@ import { User, Phone, Loader2, Pencil, CheckCircle2 } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { UserProfile } from "@/app/page";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 interface IdentificationDialogProps {
   isOpen: boolean;
@@ -25,8 +27,8 @@ interface IdentificationDialogProps {
 }
 
 export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser }: IdentificationDialogProps) {
-  const [phone, setPhone] = useState(initialUser?.phone || "");
-  const [name, setName] = useState(initialUser?.name || "");
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const firestore = useFirestore();
@@ -46,56 +48,59 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length >= 10 && firestore && !initialUser && !loading && !searching) {
-      handleLookup(cleanPhone);
+      const handleLookup = async () => {
+        setSearching(true);
+        try {
+          const docRef = doc(firestore, "users", cleanPhone);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            setName(data.name);
+          }
+        } catch (error) {
+          // Silent
+        } finally {
+          setSearching(false);
+        }
+      };
+      handleLookup();
     }
-  }, [phone, firestore, initialUser, loading]);
+  }, [phone, firestore, initialUser, loading, searching]);
 
-  const handleLookup = async (phoneNumber: string) => {
-    if (!firestore) return;
-    setSearching(true);
-    try {
-      const docRef = doc(firestore, "users", phoneNumber);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data() as UserProfile;
-        setName(data.name);
-      }
-    } catch (error) {
-      // Silent
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !firestore) return;
 
     setLoading(true);
     const cleanPhone = phone.replace(/\D/g, "");
     
-    try {
-      const docRef = doc(firestore, "users", cleanPhone);
-      
-      const userProfile: UserProfile = {
-        name,
-        phone: cleanPhone,
-        address: initialUser?.address || {
-          street: "",
-          number: "",
-          neighborhood: "",
-          city: "São Miguel - RN"
-        }
-      };
-      
-      await setDoc(docRef, userProfile, { merge: true });
-      onIdentify(userProfile);
-    } catch (error) {
-      onIdentify({ name, phone: cleanPhone, address: initialUser?.address });
-    } finally {
-      setLoading(false);
-    }
+    const userProfile: UserProfile = {
+      name,
+      phone: cleanPhone,
+      address: initialUser?.address || {
+        street: "",
+        number: "",
+        neighborhood: "",
+        city: "São Miguel - RN"
+      }
+    };
+
+    const docRef = doc(firestore, "users", cleanPhone);
+    
+    // Inicia a gravação sem await para performance otimista
+    setDoc(docRef, userProfile, { merge: true })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'write',
+          requestResourceData: userProfile,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    
+    // Notifica o pai para atualizar o estado e fechar o diálogo
+    onIdentify(userProfile);
+    setLoading(false);
   };
 
   const isEditing = !!initialUser;

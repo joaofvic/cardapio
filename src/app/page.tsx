@@ -35,7 +35,7 @@ interface PageProps {
 }
 
 export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Use React.use() to unwrap the dynamic route params in Next.js 15
+  // Unwrapping params safely with React.use for Next.js 15
   React.use(params);
   React.use(searchParams);
 

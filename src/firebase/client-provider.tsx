@@ -3,6 +3,7 @@
 import React, { ReactNode, useMemo } from 'react';
 import { FirebaseProvider } from './provider';
 import { initializeFirebase } from './index';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const FirebaseClientProvider = ({
   children,
@@ -13,6 +14,7 @@ export const FirebaseClientProvider = ({
 
   return (
     <FirebaseProvider firebaseApp={firebaseApp} firestore={firestore} auth={auth}>
+      <FirebaseErrorListener />
       {children}
     </FirebaseProvider>
   );

@@ -45,6 +45,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -149,7 +151,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       };
       handleLookup();
     }
-  }, [phone, firestore, user, selectedCity]);
+  }, [phone, firestore, user, selectedCity, searching]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
@@ -190,8 +192,8 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       setAddress(prev => ({ 
         ...prev, 
         street: 'Localização GPS',
-        number: 'Ref GPS',
-        neighborhood: 'Ref GPS'
+        number: 'Referência GPS',
+        neighborhood: 'Referência GPS'
       }));
       toast({
         title: "Localização Capturada!",
@@ -229,7 +231,15 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     };
 
     const userRef = doc(firestore, "users", cleanPhone);
-    setDoc(userRef, userProfile, { merge: true });
+    setDoc(userRef, userProfile, { merge: true })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'write',
+          requestResourceData: userProfile,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
 
     onIdentify(userProfile);
 
@@ -277,7 +287,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         </div>
 
         <ScrollArea className="flex-grow">
-          <div className="px-6 pb-32">
+          <div className="px-6 pb-20">
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
             
             {selectedCity !== "São Miguel - RN" && (
@@ -440,6 +450,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   )}
                 </div>
 
+                {/* Resumo Detalhado na Rolagem */}
                 <div className="pt-4 space-y-6 animate-in slide-in-from-bottom-10 duration-[3000ms] fill-mode-both ease-out">
                   <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3 border border-border/10">
                     <div className="flex justify-between text-xs font-bold text-muted-foreground">
@@ -504,6 +515,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
           </div>
         </ScrollArea>
 
+        {/* Rodapé Fixo "Rise-up" */}
         {items.length > 0 && (
           <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0 animate-in slide-in-from-bottom duration-[3000ms] ease-in-out">
             <div className="flex items-end justify-between mb-6 px-1">
