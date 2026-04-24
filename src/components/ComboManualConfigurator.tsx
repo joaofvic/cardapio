@@ -125,9 +125,9 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
 
   if (step === 'quantity') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom duration-[3000ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom [animation-duration:3000ms] ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
-          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in duration-[3000ms]">
+          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in [animation-duration:3000ms]">
             <ShoppingBag className="text-primary" size={40} />
           </div>
           
@@ -171,7 +171,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
 
   if (step === 'size') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right duration-[3000ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right [animation-duration:3000ms] ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
           <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <Scale className="text-primary" size={40} />
@@ -236,7 +236,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-[3000ms]">
+    <div className="flex flex-col gap-6 animate-in fade-in [animation-duration:3000ms]">
       {/* Header Info */}
       <div className="bg-primary rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
@@ -278,7 +278,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
               >
                 <span className={cn("text-[8px] font-black uppercase mb-1", isComplete ? "text-primary" : "text-white")}>Marmita {i + 1}</span>
                 {isComplete ? (
-                  <div className="flex flex-col items-center animate-in zoom-in duration-500">
+                  <div className="flex flex-col items-center animate-in zoom-in [animation-duration:500ms]">
                     <CheckCircle2 size={16} />
                     <span className="text-[10px] font-black uppercase mt-1">OK</span>
                   </div>
@@ -368,7 +368,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
           </div>
           <div className="space-y-3 mb-8">
             {marmitas[activeIndex]?.map((item, iIdx) => (
-              <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right duration-500">
+              <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right [animation-duration:500ms]">
                 <div className="relative h-10 w-10 rounded-xl overflow-hidden shrink-0">
                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                 </div>
