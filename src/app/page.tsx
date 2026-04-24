@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search, MapPin, User } from "lucide-react";
+import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -13,10 +13,10 @@ import { MealDetailsDialog } from "@/components/MealDetailsDialog";
 import { CartSheet } from "@/components/CartSheet";
 import { IdentificationDialog } from "@/components/IdentificationDialog";
 import { CitySelectionDialog } from "@/components/CitySelectionDialog";
-import { ComboConfiguratorDialog } from "@/components/ComboConfiguratorDialog";
-import { ComboTypeSelectionDialog } from "@/components/ComboTypeSelectionDialog";
+import { ComboManualConfigurator } from "@/components/ComboManualConfigurator";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { cn } from "@/lib/utils";
 
 export type UserProfile = {
   name: string;
@@ -31,16 +31,10 @@ export type UserProfile = {
   };
 };
 
-interface PageProps {
-  params: Promise<any>;
-  searchParams: Promise<any>;
-}
+type ViewMode = 'menu' | 'combo-type' | 'combo-manual' | 'combo-ai';
 
-export default function HarvestBitesApp({ params, searchParams }: PageProps) {
-  // Unwrapping params safely with React.use for Next.js 15
-  React.use(params);
-  React.use(searchParams);
-
+export default function HarvestBitesApp() {
+  const [viewMode, setViewMode] = useState<ViewMode>('menu');
   const [activeCategory, setActiveCategory] = useState<string>('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('menu');
@@ -49,8 +43,6 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCityDialogOpen, setIsCityDialogOpen] = useState(false);
-  const [isComboConfigOpen, setIsComboConfigOpen] = useState(false);
-  const [isComboTypeDialogOpen, setIsComboTypeDialogOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   
@@ -131,6 +123,8 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
       setIsCartOpen(true);
     } else {
       setActiveTab(tabId);
+      setViewMode('menu');
+      setActiveCategory('Todos');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -138,20 +132,12 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
   const handleIdentifyUser = (profile: UserProfile) => {
     setUser(profile);
     localStorage.setItem('harvest_bites_user', JSON.stringify(profile));
-    toast({
-      title: profile.name ? "Perfil Atualizado!" : "Identificado!",
-      description: `Olá, ${profile.name?.split(' ')[0] || 'Cliente'}!`,
-    });
     setIsProfileOpen(false);
   };
 
   const handleCitySelect = (city: string) => {
     setSelectedCity(city);
     localStorage.setItem('harvest_bites_city', city);
-    toast({
-      title: "Cidade Selecionada",
-      description: `Mostrando opções para ${city}.`,
-    });
     setIsCityDialogOpen(false);
   };
 
@@ -208,52 +194,133 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         </div>
       </header>
 
+      {/* Main Content Area */}
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-[3000ms] fill-mode-both ease-out">
-        <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
-          <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-            <Input 
-              className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:ring-inset"
-              placeholder="Buscar pratos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  if (cat.id === 'Combos') {
-                    setIsComboTypeDialogOpen(true);
-                  } else {
-                    setActiveCategory(cat.id);
-                  }
-                }}
-                className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
-                  activeCategory === cat.id 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                  : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <main className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMeals.map((meal) => (
-              <MealCard 
-                key={meal.id} 
-                meal={meal} 
-                onAddToCart={handleAddToCart}
-                onOpenDetails={handleOpenDetails}
+        
+        {/* Navigation & Search (Conditional) */}
+        {viewMode === 'menu' && (
+          <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
+            <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+              <Input 
+                className="pl-12 h-14 rounded-2xl bg-white border-none shadow-sm text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:ring-inset"
+                placeholder="Buscar pratos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-            ))}
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    if (cat.id === 'Combos') {
+                      setViewMode('combo-type');
+                    } else {
+                      setActiveCategory(cat.id);
+                    }
+                  }}
+                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+                    activeCategory === cat.id 
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                    : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
+        )}
+
+        <main className="mt-6 min-h-[60vh]">
+          {viewMode === 'menu' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-[3000ms]">
+              {filteredMeals.map((meal) => (
+                <MealCard 
+                  key={meal.id} 
+                  meal={meal} 
+                  onAddToCart={handleAddToCart}
+                  onOpenDetails={handleOpenDetails}
+                />
+              ))}
+            </div>
+          )}
+
+          {viewMode === 'combo-type' && (
+            <div className="space-y-6 py-8 animate-in slide-in-from-right duration-[3000ms] ease-in-out">
+              <button 
+                onClick={() => setViewMode('menu')}
+                className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
+              >
+                <ArrowLeft size={16} /> Voltar ao Cardápio
+              </button>
+              
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black tracking-tighter text-foreground">Escolha seu Estilo</h2>
+                <p className="text-muted-foreground font-medium mt-2">Como você prefere montar seu kit de 5 refeições?</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto">
+                <button
+                  onClick={() => setViewMode('combo-manual')}
+                  className="w-full flex items-center justify-between p-8 rounded-[2.5rem] bg-white shadow-sm hover:shadow-xl hover:bg-primary/5 hover:text-primary transition-all group border-2 border-transparent hover:border-primary/20 text-left"
+                >
+                  <div className="flex items-center gap-6">
+                    <div className="bg-primary/10 p-4 rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
+                      <Utensils size={32} />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-foreground group-hover:text-primary uppercase text-sm tracking-widest">Montar Manualmente</h4>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">Eu escolho cada um dos 5 pratos (3 itens por prato)</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    toast({
+                      title: "Plano Alimentar AI",
+                      description: "Esta funcionalidade estará disponível em breve!",
+                    });
+                  }}
+                  className="w-full flex items-center justify-between p-8 rounded-[2.5rem] bg-primary/5 hover:bg-primary/10 transition-all group border-2 border-primary/10 hover:border-primary/30 text-left"
+                >
+                  <div className="flex items-center gap-6">
+                    <div className="bg-secondary p-4 rounded-2xl shadow-sm text-secondary-foreground group-hover:scale-110 transition-transform">
+                      <Sparkles size={32} />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-primary uppercase text-sm tracking-widest flex items-center gap-2">
+                        Plano Alimentar AI
+                        <span className="bg-primary text-white text-[10px] px-3 py-1 rounded-full font-black">NOVO</span>
+                      </h4>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">Sugestão baseada nos seus objetivos de saúde</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {viewMode === 'combo-manual' && (
+            <div className="animate-in slide-in-from-right duration-[3000ms] ease-in-out">
+               <button 
+                onClick={() => setViewMode('combo-type')}
+                className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
+              >
+                <ArrowLeft size={16} /> Voltar
+              </button>
+              <ComboManualConfigurator 
+                onAddToCart={(combo) => {
+                  handleAddToCart(combo);
+                  setViewMode('menu');
+                  setActiveCategory('Todos');
+                }}
+              />
+            </div>
+          )}
         </main>
       </div>
 
@@ -261,24 +328,6 @@ export default function HarvestBitesApp({ params, searchParams }: PageProps) {
         meal={selectedMeal}
         isOpen={!!selectedMeal}
         onClose={() => setSelectedMeal(null)}
-        onAddToCart={handleAddToCart}
-      />
-
-      <ComboTypeSelectionDialog
-        isOpen={isComboTypeDialogOpen}
-        onClose={() => setIsComboTypeDialogOpen(false)}
-        onSelectManual={() => setIsComboConfigOpen(true)}
-        onSelectAI={() => {
-          toast({
-            title: "Plano Alimentar AI",
-            description: "Esta funcionalidade estará disponível em breve!",
-          });
-        }}
-      />
-
-      <ComboConfiguratorDialog 
-        isOpen={isComboConfigOpen}
-        onClose={() => setIsComboConfigOpen(false)}
         onAddToCart={handleAddToCart}
       />
 
