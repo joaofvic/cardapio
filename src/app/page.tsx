@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -88,13 +89,17 @@ export default function HarvestBitesApp() {
     });
   }, [activeCategory, searchQuery]);
 
-  const handleAddToCart = (meal: Meal) => {
+  const handleAddToCart = (meal: Meal, quantity: number = 1) => {
     setCartItems(prev => {
       const existing = prev.find(item => item.id === meal.id);
       if (existing) {
-        return prev.map(item => item.id === meal.id ? { ...item, ...meal, quantity: item.quantity } : item);
+        return prev.map(item => 
+          item.id === meal.id 
+            ? { ...item, quantity: item.quantity + quantity } 
+            : item
+        );
       }
-      return [...prev, { ...meal, quantity: 1 }];
+      return [...prev, { ...meal, quantity }];
     });
     setEditingCombo(null);
   };
@@ -247,7 +252,7 @@ export default function HarvestBitesApp() {
                 <MealCard 
                   key={meal.id} 
                   meal={meal} 
-                  onAddToCart={handleAddToCart}
+                  onAddToCart={(m) => handleAddToCart(m, 1)}
                   onOpenDetails={handleOpenDetails}
                 />
               ))}
@@ -324,7 +329,7 @@ export default function HarvestBitesApp() {
               <ComboManualConfigurator 
                 initialData={editingCombo}
                 onAddToCart={(combo) => {
-                  handleAddToCart(combo);
+                  handleAddToCart(combo, 1);
                   setViewMode('menu');
                   setActiveCategory('Todos');
                 }}

@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useState, useEffect } from "react";
 import { Meal } from "@/app/types/meal";
 import {
   Dialog,
@@ -10,7 +12,7 @@ import {
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2, Plus, Minus } from "lucide-react";
 
 const DairyFreeIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 text-destructive">
@@ -32,7 +34,7 @@ const GlutenFreeIcon = () => (
     <path d="M10.5 19.5 12 18l1.5 1.5" />
     <path d="m15.5 14-2.5-2.5" />
     <path d="m8.5 10 2.5 2.5" />
-    <path d="m8.5 14 2.5-2.5" />
+    <path d="m8.5 14-2.5-2.5" />
     <path d="m15.5 10-2.5 2.5" />
   </svg>
 );
@@ -53,15 +55,23 @@ interface MealDetailsDialogProps {
   meal: Meal | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (meal: Meal) => void;
+  onAddToCart: (meal: Meal, quantity: number) => void;
 }
 
 export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDetailsDialogProps) {
+  const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    if (isOpen) {
+      setQuantity(1);
+    }
+  }, [isOpen]);
+
   if (!meal) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-[3rem] bg-white shadow-2xl animate-in zoom-in duration-500">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-[3rem] bg-white shadow-2xl animate-in zoom-in duration-[500ms]">
         <div className="relative h-72 w-full">
           <Image 
             src={meal.imageUrl} 
@@ -98,7 +108,7 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
           </p>
 
           {(meal.isDairyFree || meal.isGlutenFree || meal.isSugarFree) && (
-            <div className="flex flex-col gap-6 mb-10 p-8 bg-destructive/5 rounded-[2.5rem] border-2 border-destructive/10 animate-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col gap-6 mb-10 p-8 bg-destructive/5 rounded-[2.5rem] border-2 border-destructive/10 animate-in slide-in-from-bottom-4 duration-[500ms]">
               <h4 className="text-xs font-black uppercase tracking-[0.3em] text-destructive text-center">Restrições Alimentares</h4>
               <div className="flex justify-around items-center">
                 {meal.isDairyFree && (
@@ -152,15 +162,33 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
             </div>
           </div>
 
-          <Button 
-            className="w-full h-20 rounded-full text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-tight"
-            onClick={() => {
-              onAddToCart(meal);
-              onClose();
-            }}
-          >
-            Adicionar à Cesta
-          </Button>
+          <div className="flex items-center justify-between gap-4 mb-10">
+            <div className="flex items-center bg-muted/50 rounded-full p-1 gap-4 border border-border/20 h-16 px-6">
+              <button 
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white transition-all active:scale-90"
+              >
+                <Minus size={18} />
+              </button>
+              <span className="text-xl font-black w-8 text-center tabular-nums">{quantity}</span>
+              <button 
+                onClick={() => setQuantity(quantity + 1)}
+                className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-primary hover:text-white transition-all active:scale-90"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            
+            <Button 
+              className="flex-grow h-20 rounded-full text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-tight"
+              onClick={() => {
+                onAddToCart(meal, quantity);
+                onClose();
+              }}
+            >
+              Adicionar {quantity > 1 ? quantity : ''} à Cesta
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

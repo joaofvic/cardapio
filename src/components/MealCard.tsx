@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -28,7 +29,7 @@ const GlutenFreeIcon = () => (
     <path d="M10.5 19.5 12 18l1.5 1.5" />
     <path d="m15.5 14-2.5-2.5" />
     <path d="m8.5 10 2.5 2.5" />
-    <path d="m8.5 14 2.5-2.5" />
+    <path d="m8.5 14-2.5-2.5" />
     <path d="m15.5 10-2.5 2.5" />
   </svg>
 );
