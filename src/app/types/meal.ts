@@ -12,6 +12,12 @@ export interface Meal {
   isDairyFree?: boolean;
   isGlutenFree?: boolean;
   isSugarFree?: boolean;
+  // Metadata for custom combos to allow editing
+  configuration?: {
+    marmitaCount: number;
+    selectedSize: { label: string; price: number };
+    marmitas: Meal[][];
+  };
 }
 
 export interface CartItem extends Meal {

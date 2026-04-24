@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { CartItem } from "@/app/types/meal";
+import { CartItem, Meal } from "@/app/types/meal";
 import { UserProfile } from "@/app/page";
 import {
   Sheet,
@@ -33,7 +32,8 @@ import {
   ChevronDown,
   Info,
   Calendar,
-  Truck
+  Truck,
+  Pencil
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -57,12 +57,13 @@ interface CartSheetProps {
   onIdentify: (user: UserProfile) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
+  onEditCombo?: (meal: Meal) => void;
 }
 
 type CheckoutStep = 'cart' | 'payment';
 type PaymentType = 'online' | 'delivery';
 
-export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdentify, onUpdateQuantity, onRemove }: CartSheetProps) {
+export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdentify, onUpdateQuantity, onRemove, onEditCombo }: CartSheetProps) {
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [paymentType, setPaymentType] = useState<PaymentType>('online');
   const [isNotHome, setIsNotHome] = useState(false);
@@ -344,9 +345,20 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                         <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                       </div>
                       <div className="flex flex-col justify-between flex-grow py-0.5">
-                        <div>
-                          <h4 className="font-bold text-foreground leading-tight text-sm">{item.name}</h4>
-                          <p className="text-primary font-black text-xs mt-1">{formatCurrency(item.price)}</p>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-bold text-foreground leading-tight text-sm">{item.name}</h4>
+                            <p className="text-primary font-black text-xs mt-1">{formatCurrency(item.price)}</p>
+                          </div>
+                          {item.category === 'Combo' && onEditCombo && (
+                            <button 
+                              onClick={() => onEditCombo(item)}
+                              className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary hover:text-white transition-colors animate-in zoom-in duration-300"
+                              title="Editar Combo"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center bg-muted/50 rounded-full p-0.5 gap-3 border border-border/20">
@@ -460,7 +472,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   )}
                 </div>
 
-                {/* Resumo Detalhado na Rolagem */}
                 <div className="pt-4 space-y-6 animate-in slide-in-from-bottom-10 duration-[3000ms] fill-mode-both ease-out">
                   <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3 border border-border/10">
                     <div className="flex justify-between text-xs font-bold text-muted-foreground">
@@ -520,7 +531,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                     ))}
                   </RadioGroup>
 
-                  {/* Campo de Troco condicional para Dinheiro */}
                   {selectedPayment === 'cash' && (
                     <div className="mt-6 p-6 bg-muted/30 rounded-[2.5rem] space-y-4 border border-border/10 animate-in fade-in slide-in-from-top-4 duration-500">
                       <div className="flex items-center space-x-3 px-1">
@@ -568,7 +578,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
           </div>
         </ScrollArea>
 
-        {/* Rodapé Fixo "Rise-up" */}
         {items.length > 0 && (
           <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0 animate-in slide-in-from-bottom duration-[3000ms] ease-in-out">
             <div className="flex items-end justify-between mb-6 px-1">

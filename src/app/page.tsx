@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -45,6 +44,7 @@ export default function HarvestBitesApp() {
   const [isCityDialogOpen, setIsCityDialogOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
+  const [editingCombo, setEditingCombo] = useState<Meal | null>(null);
   
   const { toast } = useToast();
 
@@ -92,10 +92,11 @@ export default function HarvestBitesApp() {
     setCartItems(prev => {
       const existing = prev.find(item => item.id === meal.id);
       if (existing) {
-        return prev.map(item => item.id === meal.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map(item => item.id === meal.id ? { ...item, ...meal, quantity: item.quantity } : item);
       }
       return [...prev, { ...meal, quantity: 1 }];
     });
+    setEditingCombo(null); // Clear editing state after adding/saving
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -139,6 +140,13 @@ export default function HarvestBitesApp() {
     setSelectedCity(city);
     localStorage.setItem('harvest_bites_city', city);
     setIsCityDialogOpen(false);
+  };
+
+  const handleEditCombo = (meal: Meal) => {
+    setEditingCombo(meal);
+    setViewMode('combo-manual');
+    setIsCartOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const userFirstName = user?.name ? user.name.split(' ')[0] : null;
@@ -194,10 +202,8 @@ export default function HarvestBitesApp() {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-[3000ms] fill-mode-both ease-out">
         
-        {/* Navigation & Search (Conditional) */}
         {viewMode === 'menu' && (
           <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
             <div className="relative mb-6">
@@ -307,12 +313,16 @@ export default function HarvestBitesApp() {
           {viewMode === 'combo-manual' && (
             <div className="animate-in slide-in-from-right duration-[3000ms] ease-in-out">
                <button 
-                onClick={() => setViewMode('combo-type')}
+                onClick={() => {
+                  setEditingCombo(null);
+                  setViewMode('combo-type');
+                }}
                 className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
               >
                 <ArrowLeft size={16} /> Voltar
               </button>
               <ComboManualConfigurator 
+                initialData={editingCombo}
                 onAddToCart={(combo) => {
                   handleAddToCart(combo);
                   setViewMode('menu');
@@ -340,6 +350,7 @@ export default function HarvestBitesApp() {
         onIdentify={handleIdentifyUser}
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}
+        onEditCombo={handleEditCombo}
       />
 
       <IdentificationDialog 

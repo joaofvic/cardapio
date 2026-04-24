@@ -1,17 +1,17 @@
-
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MEALS } from "@/app/data/meals";
 import { Meal } from "@/app/types/meal";
-import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale } from "lucide-react";
+import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface ComboManualConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
+  initialData?: Meal | null;
 }
 
 const MIN_MARMITAS = 5;
@@ -25,7 +25,7 @@ const SIZES = [
 
 type ConfigStep = 'quantity' | 'size' | 'items';
 
-export function ComboManualConfigurator({ onAddToCart }: ComboManualConfiguratorProps) {
+export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManualConfiguratorProps) {
   const [step, setStep] = useState<ConfigStep>('quantity');
   const [marmitaCount, setMarmitaCount] = useState(MIN_MARMITAS);
   const [selectedSize, setSelectedSize] = useState(SIZES[0]);
@@ -33,8 +33,21 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
 
+  // Load initial data if editing
+  useEffect(() => {
+    if (initialData?.configuration) {
+      setMarmitaCount(initialData.configuration.marmitaCount);
+      const matchedSize = SIZES.find(s => s.label === initialData.configuration?.selectedSize.label);
+      if (matchedSize) setSelectedSize(matchedSize);
+      setMarmitas(initialData.configuration.marmitas);
+      setStep('items');
+    }
+  }, [initialData]);
+
   const handleStartConfiguration = () => {
-    setMarmitas(Array(marmitaCount).fill([]).map(() => []));
+    if (!initialData) {
+      setMarmitas(Array(marmitaCount).fill([]).map(() => []));
+    }
     setStep('items');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -79,7 +92,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
     if (isComboComplete) {
       const allItems = marmitas.flat();
       const comboMeal: Meal = {
-        id: `custom-combo-${Date.now()}`,
+        id: initialData?.id || `custom-combo-${Date.now()}`,
         name: `Combo Personalizado (${marmitaCount}x ${selectedSize.label})`,
         category: "Combo",
         description: `Kit de ${marmitaCount} marmitas de ${selectedSize.label} personalizadas (3 itens cada).`,
@@ -88,7 +101,12 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
         carbs: allItems.reduce((acc, m) => acc + m.carbs, 0),
         calories: allItems.reduce((acc, m) => acc + m.calories, 0),
         imageUrl: MEALS.find(m => m.category === 'Combo')?.imageUrl || '',
-        rating: 5.0
+        rating: 5.0,
+        configuration: {
+          marmitaCount,
+          selectedSize,
+          marmitas
+        }
       };
       onAddToCart(comboMeal);
     }
@@ -114,7 +132,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
           </div>
           
           <h2 className="text-3xl font-black tracking-tighter text-foreground mb-4 leading-none">
-            Quantas marmitas?
+            {initialData ? 'Editar Quantidade' : 'Quantas marmitas?'}
           </h2>
           <p className="text-muted-foreground font-medium mb-10">
             O mínimo para este combo é de <span className="text-primary font-black">{MIN_MARMITAS} unidades</span>.
@@ -228,7 +246,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
               <Utensils size={28} />
             </div>
             <div>
-              <h2 className="text-3xl font-black tracking-tighter leading-none">Monte seu Kit</h2>
+              <h2 className="text-3xl font-black tracking-tighter leading-none">{initialData ? 'Editar Kit' : 'Monte seu Kit'}</h2>
               <p className="text-white/80 text-xs font-bold mt-2 uppercase tracking-widest">
                 Marmitas de {selectedSize.label} • Escolha 3 itens para a Marmita {activeIndex + 1}
               </p>
@@ -238,7 +256,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
             onClick={() => setStep('quantity')}
             className="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-white/20 transition-colors"
           >
-            Reiniciar
+            Configurar
           </button>
         </div>
 
@@ -246,7 +264,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
         <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
           {marmitas.map((m, i) => {
             const isActive = activeIndex === i;
-            const isComplete = m.length === ITEMS_PER_MARMITA;
+            const isComplete = m?.length === ITEMS_PER_MARMITA;
             return (
               <button
                 key={i} 
@@ -265,7 +283,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
                     <span className="text-[10px] font-black uppercase mt-1">OK</span>
                   </div>
                 ) : (
-                  <span className="text-lg font-black">{m.length}/{ITEMS_PER_MARMITA}</span>
+                  <span className="text-lg font-black">{m?.length || 0}/{ITEMS_PER_MARMITA}</span>
                 )}
               </button>
             );
@@ -332,7 +350,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
                     size="sm" 
                     className="h-8 px-4 rounded-xl bg-primary text-white text-[9px] font-black uppercase"
                     onClick={() => handleAddItem(meal)}
-                    disabled={marmitas[activeIndex].length >= ITEMS_PER_MARMITA}
+                    disabled={marmitas[activeIndex]?.length >= ITEMS_PER_MARMITA}
                   >
                     Escolher
                   </Button>
@@ -346,10 +364,10 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
         <div className="w-full md:w-72 bg-muted/20 border-t md:border-t-0 md:border-l p-6 shrink-0">
           <div className="flex justify-between items-center mb-6">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Marmita {activeIndex + 1}</h4>
-            <span className="text-[10px] font-black text-primary">{marmitas[activeIndex].length}/{ITEMS_PER_MARMITA} Itens</span>
+            <span className="text-[10px] font-black text-primary">{marmitas[activeIndex]?.length || 0}/{ITEMS_PER_MARMITA} Itens</span>
           </div>
           <div className="space-y-3 mb-8">
-            {marmitas[activeIndex].map((item, iIdx) => (
+            {marmitas[activeIndex]?.map((item, iIdx) => (
               <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right duration-500">
                 <div className="relative h-10 w-10 rounded-xl overflow-hidden shrink-0">
                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
@@ -360,9 +378,9 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
                 </button>
               </div>
             ))}
-            {marmitas[activeIndex].length < ITEMS_PER_MARMITA && (
+            {(marmitas[activeIndex]?.length || 0) < ITEMS_PER_MARMITA && (
               <div className="border border-dashed border-muted-foreground/30 rounded-2xl p-4 flex items-center justify-center text-muted-foreground/50 italic text-[10px] font-bold">
-                Escolha mais {ITEMS_PER_MARMITA - marmitas[activeIndex].length} itens...
+                Escolha mais {ITEMS_PER_MARMITA - (marmitas[activeIndex]?.length || 0)} itens...
               </div>
             )}
           </div>
@@ -375,11 +393,12 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
               </div>
             </div>
             <Button 
-              className="w-full h-14 rounded-full font-black uppercase text-xs shadow-lg shadow-primary/20"
+              className="w-full h-14 rounded-full font-black uppercase text-xs shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
               disabled={!isComboComplete}
               onClick={handleConfirm}
             >
-              FINALIZAR KIT
+              {initialData ? <Save size={16} /> : null}
+              {initialData ? 'SALVAR ALTERAÇÕES' : 'FINALIZAR KIT'}
             </Button>
             <p className="text-[9px] font-bold text-center text-muted-foreground mt-4 uppercase tracking-tighter">
               {marmitaCount} Marmitas ({selectedSize.label}) • {totalRequired} Itens
