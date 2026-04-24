@@ -1,13 +1,12 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { MEALS } from "@/app/data/meals";
 import { Meal } from "@/app/types/meal";
-import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft } from "lucide-react";
+import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -15,14 +14,24 @@ interface ComboManualConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
 }
 
-const MARMITA_COUNT = 5;
+const MIN_MARMITAS = 5;
 const ITEMS_PER_MARMITA = 3;
-const COMBO_PRICE = 159.90;
+const BASE_PRICE_5_UNITS = 159.90;
+const UNIT_PRICE = BASE_PRICE_5_UNITS / 5;
 
 export function ComboManualConfigurator({ onAddToCart }: ComboManualConfiguratorProps) {
-  const [marmitas, setMarmitas] = useState<Meal[][]>(Array(MARMITA_COUNT).fill([]).map(() => []));
+  const [step, setStep] = useState<'quantity' | 'items'>('quantity');
+  const [marmitaCount, setMarmitaCount] = useState(MIN_MARMITAS);
+  const [marmitas, setMarmitas] = useState<Meal[][]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
+
+  // Inicializa o array de marmitas quando o usuário confirma a quantidade
+  const handleStartConfiguration = () => {
+    setMarmitas(Array(marmitaCount).fill([]).map(() => []));
+    setStep('items');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const filteredMeals = useMemo(() => {
     const pool = MEALS.filter(m => m.category !== 'Combo');
@@ -45,7 +54,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
   };
 
   const nextMarmita = () => {
-    if (activeIndex < MARMITA_COUNT - 1 && marmitas[activeIndex].length === ITEMS_PER_MARMITA) {
+    if (activeIndex < marmitaCount - 1 && marmitas[activeIndex].length === ITEMS_PER_MARMITA) {
       setActiveIndex(activeIndex + 1);
     }
   };
@@ -56,18 +65,19 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
     }
   };
 
-  const isComboComplete = marmitas.every(m => m.length === ITEMS_PER_MARMITA);
-  const currentMarmitaComplete = marmitas[activeIndex].length === ITEMS_PER_MARMITA;
+  const currentPrice = marmitaCount * UNIT_PRICE;
+  const isComboComplete = marmitas.length > 0 && marmitas.every(m => m.length === ITEMS_PER_MARMITA);
+  const currentMarmitaComplete = marmitas[activeIndex]?.length === ITEMS_PER_MARMITA;
 
   const handleConfirm = () => {
     if (isComboComplete) {
       const allItems = marmitas.flat();
       const comboMeal: Meal = {
         id: `custom-combo-${Date.now()}`,
-        name: "Combo Personalizado (15 Itens)",
+        name: `Combo Personalizado (${marmitaCount} Marmitas)`,
         category: "Combo",
-        description: "Kit de 5 marmitas personalizadas (3 itens cada).",
-        price: COMBO_PRICE,
+        description: `Kit de ${marmitaCount} marmitas personalizadas (3 itens cada).`,
+        price: currentPrice,
         protein: allItems.reduce((acc, m) => acc + m.protein, 0),
         carbs: allItems.reduce((acc, m) => acc + m.carbs, 0),
         calories: allItems.reduce((acc, m) => acc + m.calories, 0),
@@ -87,21 +97,80 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
   ];
 
   const totalSelected = marmitas.flat().length;
-  const totalRequired = MARMITA_COUNT * ITEMS_PER_MARMITA;
+  const totalRequired = marmitaCount * ITEMS_PER_MARMITA;
+
+  if (step === 'quantity') {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom duration-[3000ms] ease-in-out">
+        <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
+          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in duration-[3000ms]">
+            <ShoppingBag className="text-primary" size={40} />
+          </div>
+          
+          <h2 className="text-3xl font-black tracking-tighter text-foreground mb-4 leading-none">
+            Quantas marmitas você deseja?
+          </h2>
+          <p className="text-muted-foreground font-medium mb-10">
+            Monte seu kit personalizado! O mínimo para este combo é de <span className="text-primary font-black">{MIN_MARMITAS} marmitas</span>.
+          </p>
+
+          <div className="flex items-center justify-center gap-8 mb-12">
+            <button 
+              onClick={() => setMarmitaCount(Math.max(MIN_MARMITAS, marmitaCount - 1))}
+              className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90 border border-border/20"
+            >
+              <Minus size={24} strokeWidth={3} />
+            </button>
+            <div className="flex flex-col items-center">
+              <span className="text-6xl font-black text-foreground tabular-nums leading-none">{marmitaCount}</span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-2">Marmitas</span>
+            </div>
+            <button 
+              onClick={() => setMarmitaCount(marmitaCount + 1)}
+              className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90 border border-border/20"
+            >
+              <Plus size={24} strokeWidth={3} />
+            </button>
+          </div>
+
+          <div className="bg-primary/5 p-6 rounded-3xl mb-10 border border-primary/10">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 block">Investimento no seu bem-estar</span>
+            <span className="text-3xl font-black text-primary">R$ {currentPrice.toFixed(2).replace('.', ',')}</span>
+          </div>
+
+          <Button 
+            className="w-full h-20 rounded-full text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-tighter"
+            onClick={handleStartConfiguration}
+          >
+            Começar a Montar
+            <ChevronRight size={24} className="ml-2" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-[3000ms]">
       {/* Header Info */}
       <div className="bg-primary rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
-        <div className="flex items-center gap-4 mb-6">
-          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
-            <Utensils size={28} />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
+              <Utensils size={28} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black tracking-tighter leading-none">Monte seu Kit</h2>
+              <p className="text-white/80 text-xs font-bold mt-2 uppercase tracking-widest">Escolha 3 itens para a Marmita {activeIndex + 1}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-3xl font-black tracking-tighter leading-none">Monte seu Kit</h2>
-            <p className="text-white/80 text-xs font-bold mt-2 uppercase tracking-widest">Escolha 3 itens por marmita</p>
-          </div>
+          <button 
+            onClick={() => setStep('quantity')}
+            className="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-white/20 transition-colors"
+          >
+            Alterar Quantidade
+          </button>
         </div>
 
         {/* Slot Indicators */}
@@ -169,7 +238,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
                   <ChevronLeft size={14} className="mr-1" /> VOLTAR
                 </Button>
               )}
-              {currentMarmitaComplete && activeIndex < MARMITA_COUNT - 1 && (
+              {currentMarmitaComplete && activeIndex < marmitaCount - 1 && (
                 <Button size="sm" onClick={nextMarmita} className="bg-secondary text-secondary-foreground rounded-full h-8 text-[10px] font-black animate-pulse">
                   PRÓXIMA <ChevronRight size={14} className="ml-1" />
                 </Button>
@@ -206,7 +275,10 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
 
         {/* Summary (Desktop or Side) */}
         <div className="w-full md:w-72 bg-muted/20 border-t md:border-t-0 md:border-l p-6 shrink-0">
-          <h4 className="text-[10px] font-black uppercase tracking-widest mb-6 text-muted-foreground">Marmita {activeIndex + 1}</h4>
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Marmita {activeIndex + 1}</h4>
+            <span className="text-[10px] font-black text-primary">{marmitas[activeIndex].length}/{ITEMS_PER_MARMITA} Itens</span>
+          </div>
           <div className="space-y-3 mb-8">
             {marmitas[activeIndex].map((item, iIdx) => (
               <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right duration-500">
@@ -221,7 +293,7 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
             ))}
             {marmitas[activeIndex].length < ITEMS_PER_MARMITA && (
               <div className="border border-dashed border-muted-foreground/30 rounded-2xl p-4 flex items-center justify-center text-muted-foreground/50 italic text-[10px] font-bold">
-                Aguardando itens...
+                Escolha mais {ITEMS_PER_MARMITA - marmitas[activeIndex].length} itens...
               </div>
             )}
           </div>
@@ -229,8 +301,8 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
           <div className="pt-6 border-t border-muted-foreground/10">
             <div className="flex justify-between items-end mb-4">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-muted-foreground uppercase">Valor do Kit</span>
-                <span className="text-2xl font-black text-primary">R$ 159,90</span>
+                <span className="text-[9px] font-black text-muted-foreground uppercase">Total do seu Kit</span>
+                <span className="text-2xl font-black text-primary">R$ {currentPrice.toFixed(2).replace('.', ',')}</span>
               </div>
             </div>
             <Button 
@@ -240,6 +312,9 @@ export function ComboManualConfigurator({ onAddToCart }: ComboManualConfigurator
             >
               FINALIZAR KIT
             </Button>
+            <p className="text-[9px] font-bold text-center text-muted-foreground mt-4 uppercase tracking-tighter">
+              {marmitaCount} Marmitas • {totalRequired} Itens no total
+            </p>
           </div>
         </div>
       </div>
