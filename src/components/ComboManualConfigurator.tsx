@@ -33,7 +33,6 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
 
-  // Load initial data if editing
   useEffect(() => {
     if (initialData?.configuration) {
       setMarmitaCount(initialData.configuration.marmitaCount);
@@ -125,9 +124,9 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
 
   if (step === 'quantity') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom [animation-duration:3000ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom [animation-duration:500ms] ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
-          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in [animation-duration:3000ms]">
+          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in [animation-duration:500ms]">
             <ShoppingBag className="text-primary" size={40} />
           </div>
           
@@ -171,7 +170,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
 
   if (step === 'size') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right [animation-duration:3000ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
           <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <Scale className="text-primary" size={40} />
@@ -236,8 +235,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in [animation-duration:3000ms]">
-      {/* Header Info */}
+    <div className="flex flex-col gap-6 animate-in fade-in [animation-duration:500ms]">
       <div className="bg-primary rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="flex items-center justify-between mb-6">
@@ -260,7 +258,6 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
           </button>
         </div>
 
-        {/* Slot Indicators */}
         <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
           {marmitas.map((m, i) => {
             const isActive = activeIndex === i;
@@ -270,7 +267,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
                 key={i} 
                 onClick={() => setActiveIndex(i)}
                 className={cn(
-                  "flex flex-col items-center min-w-[120px] p-3 rounded-2xl border-2 transition-all duration-500",
+                  "flex flex-col items-center min-w-[120px] p-3 rounded-2xl border-2 transition-all duration-300",
                   isComplete 
                     ? "bg-white text-primary border-white" 
                     : (isActive ? "border-white bg-white/20 scale-105" : "border-white/30 bg-white/5 opacity-50")
@@ -278,7 +275,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
               >
                 <span className={cn("text-[8px] font-black uppercase mb-1", isComplete ? "text-primary" : "text-white")}>Marmita {i + 1}</span>
                 {isComplete ? (
-                  <div className="flex flex-col items-center animate-in zoom-in [animation-duration:500ms]">
+                  <div className="flex flex-col items-center animate-in zoom-in [animation-duration:300ms]">
                     <CheckCircle2 size={16} />
                     <span className="text-[10px] font-black uppercase mt-1">OK</span>
                   </div>
@@ -299,10 +296,8 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
         </div>
       </div>
 
-      {/* Selector Area */}
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-border/40 overflow-hidden flex flex-col md:flex-row">
         <div className="flex-grow flex flex-col">
-          {/* Categories & Nav */}
           <div className="p-4 border-b flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
             <div className="flex gap-2">
               {categories.map(cat => (
@@ -333,7 +328,6 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
             </div>
           </div>
 
-          {/* Grid Area */}
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredMeals.map((meal) => (
               <div 
@@ -341,7 +335,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
                 className="bg-muted/30 p-4 rounded-[2rem] border border-transparent hover:border-primary/20 transition-all flex flex-col group"
               >
                 <div className="relative h-24 w-full rounded-2xl overflow-hidden mb-3">
-                  <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                 </div>
                 <h4 className="font-black text-xs leading-tight mb-2 line-clamp-1">{meal.name}</h4>
                 <div className="mt-auto flex items-center justify-between">
@@ -360,7 +354,6 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
           </div>
         </div>
 
-        {/* Summary (Desktop or Side) */}
         <div className="w-full md:w-72 bg-muted/20 border-t md:border-t-0 md:border-l p-6 shrink-0">
           <div className="flex justify-between items-center mb-6">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Marmita {activeIndex + 1}</h4>
@@ -368,7 +361,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
           </div>
           <div className="space-y-3 mb-8">
             {marmitas[activeIndex]?.map((item, iIdx) => (
-              <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right [animation-duration:500ms]">
+              <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right [animation-duration:300ms]">
                 <div className="relative h-10 w-10 rounded-xl overflow-hidden shrink-0">
                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                 </div>

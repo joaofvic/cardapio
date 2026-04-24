@@ -94,7 +94,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   useEffect(() => {
     if (!isOpen) {
-      setTimeout(() => setStep('cart'), 300);
+      setTimeout(() => setStep('cart'), 150);
     } else {
       setPhone(user?.phone || "");
       setName(user?.name || "");
@@ -147,7 +147,6 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
             }
           }
         } catch (e) {
-          // Silent
         } finally {
           setSearching(false);
         }
@@ -228,7 +227,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   const handleNextStep = () => {
     setStep('payment');
-    setTimeout(scrollToTop, 100);
+    setTimeout(scrollToTop, 50);
   };
 
   const handleFinalize = async () => {
@@ -275,7 +274,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden shadow-2xl animate-in slide-in-from-right [animation-duration:3000ms] ease-in-out">
+      <SheetContent className="w-full sm:max-w-md bg-white border-l-0 rounded-l-[2rem] flex flex-col p-0 overflow-hidden shadow-2xl animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
         <div className="p-6 pb-2 shrink-0">
           <SheetHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -302,7 +301,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
             
             {selectedCity !== "São Miguel - RN" && (
-              <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 [animation-duration:3000ms] ease-in-out">
+              <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 [animation-duration:500ms] ease-in-out">
                 <div className="flex gap-2">
                   <Info className="text-amber-600 shrink-0" size={16} />
                   <p className="text-[11px] font-bold text-amber-900 leading-tight">
@@ -337,7 +336,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                 </Button>
               </div>
             ) : step === 'cart' ? (
-              <div className="space-y-8 animate-in fade-in [animation-duration:3000ms] ease-in-out">
+              <div className="space-y-8 animate-in fade-in [animation-duration:500ms] ease-in-out">
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-4 group">
@@ -353,7 +352,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                           {item.category === 'Combo' && onEditCombo && (
                             <button 
                               onClick={() => onEditCombo(item)}
-                              className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary hover:text-white transition-colors animate-in zoom-in [animation-duration:300ms]"
+                              className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary hover:text-white transition-colors animate-in zoom-in [animation-duration:200ms]"
                               title="Editar Combo"
                             >
                               <Pencil size={14} />
@@ -437,7 +436,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   </div>
 
                   {isNotHome && (
-                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 [animation-duration:3000ms] ease-out">
+                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 [animation-duration:500ms] ease-out">
                       <div className="grid grid-cols-4 gap-3">
                         <div className="col-span-3 space-y-1.5">
                           <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua / Avenida</Label>
@@ -472,7 +471,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   )}
                 </div>
 
-                <div className="pt-4 space-y-6 animate-in slide-in-from-bottom-10 [animation-duration:3000ms] fill-mode-both ease-out">
+                <div className="pt-4 space-y-6 animate-in slide-in-from-bottom-10 [animation-duration:500ms] fill-mode-both ease-out">
                   <div className="bg-muted/30 p-5 rounded-[2rem] space-y-3 border border-border/10">
                     <div className="flex justify-between text-xs font-bold text-muted-foreground">
                       <span>Subtotal</span>
@@ -503,7 +502,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 animate-in slide-in-from-right [animation-duration:3000ms] ease-in-out">
+              <div className="space-y-6 animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
                 <div className="bg-primary/5 p-5 rounded-3xl border border-primary/10 text-center">
                   <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Total a Pagar</p>
                   <p className="text-4xl font-black text-foreground">{formatCurrency(total)}</p>
@@ -517,7 +516,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   </div>
                 </div>
 
-                <div className="animate-in fade-in slide-in-from-right-10 [animation-duration:3000ms] fill-mode-both ease-in-out" key={paymentType}>
+                <div className="animate-in fade-in slide-in-from-right-10 [animation-duration:500ms] fill-mode-both ease-in-out" key={paymentType}>
                   <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment} className="grid gap-3">
                     {filteredMethods.map((method) => (
                       <Label key={method.id} htmlFor={method.id} className={cn("flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer group", selectedPayment === method.id ? "border-primary bg-primary/5" : "border-muted-foreground/10 hover:border-primary/30")}>
@@ -532,7 +531,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                   </RadioGroup>
 
                   {selectedPayment === 'cash' && (
-                    <div className="mt-6 p-6 bg-muted/30 rounded-[2.5rem] space-y-4 border border-border/10 animate-in fade-in slide-in-from-top-4 [animation-duration:500ms]">
+                    <div className="mt-6 p-6 bg-muted/30 rounded-[2.5rem] space-y-4 border border-border/10 animate-in fade-in slide-in-from-top-4 [animation-duration:300ms]">
                       <div className="flex items-center space-x-3 px-1">
                         <Checkbox 
                           id="needs-change" 
@@ -544,7 +543,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                       </div>
                       
                       {needsChange && (
-                        <div className="space-y-4 pl-8 animate-in zoom-in-95 [animation-duration:300ms]">
+                        <div className="space-y-4 pl-8 animate-in zoom-in-95 [animation-duration:200ms]">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Troco para quanto?</Label>
                             <div className="relative">
@@ -559,7 +558,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                           </div>
 
                           {changeValue > 0 && (
-                            <div className="bg-primary/10 p-4 rounded-2xl border border-primary/20 animate-in slide-in-from-top-2 [animation-duration:500ms]">
+                            <div className="bg-primary/10 p-4 rounded-2xl border border-primary/20 animate-in slide-in-from-top-2 [animation-duration:300ms]">
                               <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Seu troco será de</p>
                               <p className="text-xl font-black text-foreground">{formatCurrency(changeValue)}</p>
                             </div>
@@ -579,7 +578,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         </ScrollArea>
 
         {items.length > 0 && (
-          <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0 animate-in slide-in-from-bottom [animation-duration:3000ms] ease-in-out">
+          <div className="p-6 bg-white border-t rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0 animate-in slide-in-from-bottom [animation-duration:500ms] ease-in-out">
             <div className="flex items-end justify-between mb-6 px-1">
               <div className="flex flex-col">
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total do Pedido</span>

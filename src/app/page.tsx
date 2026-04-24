@@ -96,7 +96,7 @@ export default function HarvestBitesApp() {
       }
       return [...prev, { ...meal, quantity: 1 }];
     });
-    setEditingCombo(null); // Clear editing state after adding/saving
+    setEditingCombo(null);
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -160,7 +160,7 @@ export default function HarvestBitesApp() {
       />
       
       <header className="flex justify-between items-start mb-8">
-        <div className="animate-in fade-in slide-in-from-left [animation-duration:3000ms] ease-in-out">
+        <div className="animate-in fade-in slide-in-from-left [animation-duration:500ms] ease-in-out">
           <h1 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h1>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
             Refeições Saudáveis & Prontas
@@ -169,7 +169,7 @@ export default function HarvestBitesApp() {
         <div className="flex flex-col items-end gap-2">
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right [animation-duration:3000ms] ease-in-out"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right [animation-duration:500ms] ease-in-out"
           >
             {userFirstName ? (
               <div className="flex items-center gap-2 px-1">
@@ -189,7 +189,7 @@ export default function HarvestBitesApp() {
           <button 
             key={selectedCity}
             onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in [animation-duration:3000ms] ease-in-out"
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in [animation-duration:500ms] ease-in-out"
           >
             <MapPin size={14} className="text-primary" />
             <div className="text-right">
@@ -202,7 +202,7 @@ export default function HarvestBitesApp() {
         </div>
       </header>
 
-      <div className="animate-in fade-in slide-in-from-bottom-3 [animation-duration:3000ms] fill-mode-both ease-out">
+      <div className="animate-in fade-in slide-in-from-bottom-3 [animation-duration:500ms] fill-mode-both ease-out">
         
         {viewMode === 'menu' && (
           <div className="sticky top-4 z-30 bg-background/80 backdrop-blur-md pb-4 pt-2">
@@ -242,7 +242,7 @@ export default function HarvestBitesApp() {
 
         <main className="mt-6 min-h-[60vh]">
           {viewMode === 'menu' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in [animation-duration:3000ms]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in [animation-duration:500ms]">
               {filteredMeals.map((meal) => (
                 <MealCard 
                   key={meal.id} 
@@ -255,7 +255,7 @@ export default function HarvestBitesApp() {
           )}
 
           {viewMode === 'combo-type' && (
-            <div className="space-y-6 py-8 animate-in slide-in-from-right [animation-duration:3000ms] ease-in-out">
+            <div className="space-y-6 py-8 animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
               <button 
                 onClick={() => setViewMode('menu')}
                 className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
@@ -311,7 +311,7 @@ export default function HarvestBitesApp() {
           )}
 
           {viewMode === 'combo-manual' && (
-            <div className="animate-in slide-in-from-right [animation-duration:3000ms] ease-in-out">
+            <div className="animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
                <button 
                 onClick={() => {
                   setEditingCombo(null);
