@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Meal } from "@/app/types/meal";
 import { MEALS } from "@/app/data/meals";
-import { Upload, FileText, Sparkles, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Upload, FileText, Sparkles, Loader2, CheckCircle2, ArrowRight, Heart } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ interface ComboAIConfiguratorProps {
 
 export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: ComboAIConfiguratorProps) {
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [textPlan, setTextPlan] = useState("");
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<Meal[] | null>(null);
@@ -58,7 +59,8 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
 
     setLoading(true);
     try {
-      const result = await analyzeMealPlan({
+      // Simulando o envio/análise para o lead de orçamento
+      await analyzeMealPlan({
         textPlan: textPlan || undefined,
         photoDataUri: photoDataUri || undefined,
         availableMeals: MEALS.filter(m => m.category !== 'Combo').map(m => ({
@@ -71,18 +73,17 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
         }))
       });
 
-      const matchedMeals = MEALS.filter(m => result.recommendations.includes(m.name));
-      setRecommendations(matchedMeals);
+      setSubmitted(true);
       
       toast({
-        title: "Análise Concluída!",
-        description: "Encontramos os melhores pratos para o seu plano.",
+        title: "Plano Enviado!",
+        description: "Recebemos suas informações com sucesso.",
       });
     } catch (error) {
       console.error(error);
       toast({
         variant: "destructive",
-        title: "Erro na análise",
+        title: "Erro no envio",
         description: "Não conseguimos processar seu plano agora. Tente novamente.",
       });
     } finally {
@@ -90,37 +91,44 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
     }
   };
 
-  const handleConfirm = () => {
-    if (!recommendations || recommendations.length === 0) return;
+  if (submitted) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4 animate-in zoom-in-95 duration-500 ease-out">
+        <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-2xl border border-primary/10 text-center relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full" />
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-secondary/10 rounded-full" />
+          
+          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-bounce">
+            <CheckCircle2 className="text-primary" size={48} />
+          </div>
 
-    const marmitas: Meal[][] = Array(5).fill([]).map(() => {
-      const items = [...recommendations].sort(() => 0.5 - Math.random()).slice(0, 3);
-      while (items.length < 3) {
-        items.push(MEALS.filter(m => m.category !== 'Combo')[0]);
-      }
-      return items;
-    });
+          <h2 className="text-3xl font-black tracking-tighter text-foreground mb-6 leading-none">
+            Plano Enviado com Sucesso!
+          </h2>
+          
+          <div className="space-y-6 relative z-10">
+            <p className="text-lg font-medium text-muted-foreground leading-relaxed">
+              Recebemos seu plano e já estamos analisando cada detalhe! 🥗
+            </p>
+            <p className="text-base font-bold text-foreground leading-relaxed bg-muted/30 p-6 rounded-[2rem] border border-border/50">
+              Um de nossos especialistas entrará em contato em breve para apresentar um <span className="text-primary font-black">orçamento personalizado</span> e explicar como transformaremos sua dieta em refeições práticas e deliciosas.
+            </p>
+            <p className="text-sm font-bold text-primary flex items-center justify-center gap-2 uppercase tracking-widest">
+              Obrigado por confiar no Harvest Bites! <Heart size={16} className="fill-primary" />
+            </p>
+          </div>
 
-    const comboMeal: Meal = {
-      id: `ai-combo-${Date.now()}`,
-      name: "Combo Plano Alimentar IA",
-      category: "Combo",
-      description: "Kit personalizado baseado nas suas necessidades nutricionais enviadas.",
-      price: 159.90,
-      protein: marmitas.flat().reduce((acc, m) => acc + m.protein, 0),
-      carbs: marmitas.flat().reduce((acc, m) => acc + m.carbs, 0),
-      calories: marmitas.flat().reduce((acc, m) => acc + m.calories, 0),
-      imageUrl: MEALS.find(m => m.category === 'Combo')?.imageUrl || '',
-      rating: 5.0,
-      configuration: {
-        marmitaCount: 5,
-        selectedSize: { label: '400g', price: 19.90 },
-        marmitas
-      }
-    };
-
-    onAddToCart(comboMeal);
-  };
+          <Button 
+            variant="outline"
+            className="mt-12 w-full h-16 rounded-full font-black border-muted-foreground/20 hover:bg-muted text-primary"
+            onClick={() => window.location.reload()}
+          >
+            VOLTAR AO CARDÁPIO
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -135,109 +143,67 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
           </div>
         </div>
 
-        {!recommendations ? (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Anexar Foto do Plano</label>
-                <div className={cn(
-                  "relative h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden",
-                  photoDataUri ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50"
-                )}>
-                  {photoDataUri ? (
-                    <>
-                      <Image src={photoDataUri} alt="Plano Alimentar" fill className="object-cover opacity-40" />
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        <CheckCircle2 size={32} className="text-primary" />
-                        <span className="text-xs font-bold text-primary">FOTO CARREGADA</span>
-                        <button onClick={() => setPhotoDataUri(null)} className="text-[10px] font-black text-muted-foreground underline">Remover</button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={32} className="text-muted-foreground mb-3" />
-                      <span className="text-xs font-bold text-muted-foreground text-center px-4">Clique para enviar ou arraste a foto</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                        onChange={handleFileUpload}
-                      />
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ou descreva em texto</label>
-                <Textarea 
-                  placeholder="Descreva aqui se possui alguma restrição como leite, lactose..." 
-                  className="h-48 rounded-3xl bg-muted/30 border-none resize-none p-6 font-medium focus-visible:ring-primary"
-                  value={textPlan}
-                  onChange={(e) => setTextPlan(e.target.value)}
-                />
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Anexar Foto do Plano</label>
+              <div className={cn(
+                "relative h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden",
+                photoDataUri ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50"
+              )}>
+                {photoDataUri ? (
+                  <>
+                    <Image src={photoDataUri} alt="Plano Alimentar" fill className="object-cover opacity-40" />
+                    <div className="relative z-10 flex flex-col items-center gap-2">
+                      <CheckCircle2 size={32} className="text-primary" />
+                      <span className="text-xs font-bold text-primary">FOTO CARREGADA</span>
+                      <button onClick={() => setPhotoDataUri(null)} className="text-[10px] font-black text-muted-foreground underline">Remover</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={32} className="text-muted-foreground mb-3" />
+                    <span className="text-xs font-bold text-muted-foreground text-center px-4">Clique para enviar ou arraste a foto</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                      onChange={handleFileUpload}
+                    />
+                  </>
+                )}
               </div>
             </div>
 
-            <Button 
-              className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 uppercase"
-              onClick={handleAnalyze}
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={20} />
-                  ENVIANDO...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  ENVIAR
-                  <ArrowRight size={20} />
-                </div>
-              )}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-in zoom-in-95 duration-500">
-            <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/10">
-              <h3 className="font-black text-lg text-primary mb-2 flex items-center gap-2">
-                <Sparkles size={20} />
-                Sugestões Encontradas
-              </h3>
-              <p className="text-xs font-medium text-muted-foreground">Com base no seu plano, estes são os pratos que mais combinam com seus objetivos:</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {recommendations.map((meal) => (
-                <div key={meal.id} className="flex items-center gap-4 p-4 bg-muted/30 rounded-2xl border border-transparent">
-                  <div className="relative h-16 w-16 rounded-xl overflow-hidden shrink-0">
-                    <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs leading-tight">{meal.name}</h4>
-                    <span className="text-[10px] font-bold text-primary uppercase">{meal.category}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                className="flex-1 h-16 rounded-full font-black border-muted-foreground/20 hover:bg-muted"
-                onClick={() => setRecommendations(null)}
-              >
-                VOLTAR
-              </Button>
-              <Button 
-                className="flex-[2] h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20"
-                onClick={handleConfirm}
-              >
-                ADICIONAR KIT À CESTA
-              </Button>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ou descreva em texto</label>
+              <Textarea 
+                placeholder="Descreva aqui se possui alguma restrição como leite, lactose..." 
+                className="h-48 rounded-3xl bg-muted/30 border-none resize-none p-6 font-medium focus-visible:ring-primary"
+                value={textPlan}
+                onChange={(e) => setTextPlan(e.target.value)}
+              />
             </div>
           </div>
-        )}
+
+          <Button 
+            className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 uppercase"
+            onClick={handleAnalyze}
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="animate-spin" size={20} />
+                ENVIANDO...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                ENVIAR
+                <ArrowRight size={20} />
+              </div>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
