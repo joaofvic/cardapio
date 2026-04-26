@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MEALS } from "@/app/data/meals";
 import { Meal } from "@/app/types/meal";
-import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save } from "lucide-react";
+import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save, User, Users } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -23,12 +23,13 @@ const SIZES = [
   { label: '500g', price: 22.90 },
 ];
 
-type ConfigStep = 'quantity' | 'size' | 'items';
+type ConfigStep = 'quantity' | 'household' | 'size' | 'items';
 
 export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManualConfiguratorProps) {
   const [step, setStep] = useState<ConfigStep>('quantity');
   const [marmitaCount, setMarmitaCount] = useState(MIN_MARMITAS);
   const [selectedSize, setSelectedSize] = useState(SIZES[0]);
+  const [isMultiplePeople, setIsMultiplePeople] = useState<boolean | null>(null);
   const [marmitas, setMarmitas] = useState<Meal[][]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
@@ -158,11 +159,84 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
 
           <Button 
             className="w-full h-20 rounded-full text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-tighter"
-            onClick={() => setStep('size')}
+            onClick={() => setStep('household')}
           >
             Próximo Passo
             <ChevronRight size={24} className="ml-2" />
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'household') {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
+        <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
+          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <Users className="text-primary" size={40} />
+          </div>
+          
+          <h2 className="text-3xl font-black tracking-tighter text-foreground mb-4 leading-none">
+            São para mais de uma pessoa?
+          </h2>
+          <p className="text-muted-foreground font-medium mb-10">
+            Isso nos ajuda a organizar seu pedido da melhor forma.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 mb-10">
+            <button
+              onClick={() => setIsMultiplePeople(false)}
+              className={cn(
+                "p-6 rounded-[2rem] border-2 transition-all flex items-center gap-4 group",
+                isMultiplePeople === false 
+                  ? "border-primary bg-primary/5" 
+                  : "border-muted-foreground/10 bg-white hover:border-primary/30"
+              )}
+            >
+              <div className={cn("p-3 rounded-2xl", isMultiplePeople === false ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
+                <User size={24} />
+              </div>
+              <span className={cn("text-lg font-black", isMultiplePeople === false ? "text-primary" : "text-foreground")}>
+                Apenas para mim
+              </span>
+            </button>
+
+            <button
+              onClick={() => setIsMultiplePeople(true)}
+              className={cn(
+                "p-6 rounded-[2rem] border-2 transition-all flex items-center gap-4 group",
+                isMultiplePeople === true 
+                  ? "border-primary bg-primary/5" 
+                  : "border-muted-foreground/10 bg-white hover:border-primary/30"
+              )}
+            >
+              <div className={cn("p-3 rounded-2xl", isMultiplePeople === true ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
+                <Users size={24} />
+              </div>
+              <span className={cn("text-lg font-black", isMultiplePeople === true ? "text-primary" : "text-foreground")}>
+                Para mais pessoas
+              </span>
+            </button>
+          </div>
+
+          <div className="flex gap-4">
+            <Button 
+              variant="outline"
+              className="flex-1 h-20 rounded-full text-lg font-black border-muted-foreground/20 hover:bg-muted"
+              onClick={() => setStep('quantity')}
+            >
+              Voltar
+            </Button>
+            <Button 
+              disabled={isMultiplePeople === null}
+              className="flex-[2] h-20 rounded-full text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-tighter"
+              onClick={() => setStep('size')}
+            >
+              Continuar
+              <ChevronRight size={24} className="ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -217,7 +291,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
             <Button 
               variant="outline"
               className="flex-1 h-20 rounded-full text-lg font-black border-muted-foreground/20 hover:bg-muted"
-              onClick={() => setStep('quantity')}
+              onClick={() => setStep('household')}
             >
               Voltar
             </Button>
