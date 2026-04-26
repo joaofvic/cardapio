@@ -1,17 +1,21 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { MEALS } from "@/app/data/meals";
 import { Meal } from "@/app/types/meal";
 import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save, User, Users } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { UserProfile } from "@/app/page";
 
 interface ComboManualConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
   initialData?: Meal | null;
+  user?: UserProfile | null;
 }
 
 const MIN_MARMITAS = 5;
@@ -25,11 +29,12 @@ const SIZES = [
 
 type ConfigStep = 'quantity' | 'household' | 'size' | 'items';
 
-export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManualConfiguratorProps) {
+export function ComboManualConfigurator({ onAddToCart, initialData, user }: ComboManualConfiguratorProps) {
   const [step, setStep] = useState<ConfigStep>('quantity');
   const [marmitaCount, setMarmitaCount] = useState(MIN_MARMITAS);
   const [selectedSize, setSelectedSize] = useState(SIZES[0]);
   const [isMultiplePeople, setIsMultiplePeople] = useState<boolean | null>(null);
+  const [householdNames, setHouseholdNames] = useState("");
   const [marmitas, setMarmitas] = useState<Meal[][]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
@@ -40,6 +45,12 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
       const matchedSize = SIZES.find(s => s.label === initialData.configuration?.selectedSize.label);
       if (matchedSize) setSelectedSize(matchedSize);
       setMarmitas(initialData.configuration.marmitas);
+      // @ts-ignore - householdNames is extra metadata
+      if (initialData.configuration.householdNames) {
+        // @ts-ignore
+        setHouseholdNames(initialData.configuration.householdNames);
+        setIsMultiplePeople(true);
+      }
       setStep('items');
     }
   }, [initialData]);
@@ -105,7 +116,9 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
         configuration: {
           marmitaCount,
           selectedSize,
-          marmitas
+          marmitas,
+          // @ts-ignore
+          householdNames: isMultiplePeople ? householdNames : undefined
         }
       };
       onAddToCart(comboMeal);
@@ -184,7 +197,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
             Isso nos ajuda a organizar seu pedido da melhor forma.
           </p>
 
-          <div className="grid grid-cols-1 gap-4 mb-10">
+          <div className="grid grid-cols-1 gap-4 mb-6">
             <button
               onClick={() => setIsMultiplePeople(false)}
               className={cn(
@@ -219,6 +232,20 @@ export function ComboManualConfigurator({ onAddToCart, initialData }: ComboManua
               </span>
             </button>
           </div>
+
+          {isMultiplePeople && (
+            <div className="mb-8 animate-in slide-in-from-top-4 [animation-duration:500ms] text-left">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2 mb-2 block">
+                Nomes das pessoas (A primeira é você: {user?.name || "Cliente"})
+              </label>
+              <Textarea 
+                placeholder="Digite os nomes das demais pessoas..." 
+                className="rounded-2xl bg-muted/30 border-none resize-none p-4 font-medium focus-visible:ring-primary min-h-[100px]"
+                value={householdNames}
+                onChange={(e) => setHouseholdNames(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="flex gap-4">
             <Button 

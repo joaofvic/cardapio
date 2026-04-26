@@ -323,6 +323,7 @@ export default function HarvestBitesApp() {
                 <ArrowLeft size={16} /> Voltar
               </button>
               <ComboManualConfigurator 
+                user={user}
                 initialData={editingCombo}
                 onAddToCart={(combo) => {
                   handleAddToCart(combo, 1);
