@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -162,7 +161,7 @@ export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
               <div className="space-y-4">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ou descreva em texto</label>
                 <Textarea 
-                  placeholder="Ex: No almoço preciso de 150g de frango e legumes..." 
+                  placeholder="Descreva aqui se possui alguma restrição como leite, lactose..." 
                   className="h-48 rounded-3xl bg-muted/30 border-none resize-none p-6 font-medium focus-visible:ring-primary"
                   value={textPlan}
                   onChange={(e) => setTextPlan(e.target.value)}
