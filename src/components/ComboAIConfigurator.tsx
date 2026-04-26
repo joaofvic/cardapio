@@ -24,7 +24,6 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
   const [submitted, setSubmitted] = useState(false);
   const [textPlan, setTextPlan] = useState("");
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<Meal[] | null>(null);
   const { toast } = useToast();
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,14 +51,14 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
       onIdentifyRequired();
       toast({
         title: "Identificação Necessária",
-        description: "Por favor, informe seus dados para continuarmos o envio.",
+        description: "Por favor, informe seus dados para que possamos entrar em contato.",
       });
       return;
     }
 
     setLoading(true);
     try {
-      // Simulando o envio/análise para o lead de orçamento
+      // Enviamos para a análise da IA, mas o foco é o contato comercial posterior
       await analyzeMealPlan({
         textPlan: textPlan || undefined,
         photoDataUri: photoDataUri || undefined,
@@ -72,22 +71,16 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
           calories: m.calories
         }))
       });
-
+    } catch (error) {
+      console.error("AI analysis error (handled as lead):", error);
+    } finally {
+      // Sempre mostramos a mensagem de sucesso se o formulário foi preenchido e o usuário identificado
       setSubmitted(true);
-      
+      setLoading(false);
       toast({
-        title: "Plano Enviado!",
+        title: "Plano Recebido!",
         description: "Recebemos suas informações com sucesso.",
       });
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Erro no envio",
-        description: "Não conseguimos processar seu plano agora. Tente novamente.",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -103,24 +96,29 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
           </div>
 
           <h2 className="text-3xl font-black tracking-tighter text-foreground mb-6 leading-none">
-            Plano Enviado com Sucesso!
+            Recebemos seu plano! 🥗
           </h2>
           
-          <div className="space-y-6 relative z-10">
-            <p className="text-lg font-medium text-muted-foreground leading-relaxed">
-              Recebemos seu plano e já estamos analisando cada detalhe! 🥗
+          <div className="space-y-6 relative z-10 text-left">
+            <p className="text-lg font-medium text-muted-foreground leading-relaxed text-center">
+              Tudo certo, {user?.name.split(' ')[0]}!
             </p>
-            <p className="text-base font-bold text-foreground leading-relaxed bg-muted/30 p-6 rounded-[2rem] border border-border/50">
-              Um de nossos especialistas entrará em contato em breve para apresentar um <span className="text-primary font-black">orçamento personalizado</span> e explicar como transformaremos sua dieta em refeições práticas e deliciosas.
-            </p>
-            <p className="text-sm font-bold text-primary flex items-center justify-center gap-2 uppercase tracking-widest">
-              Obrigado por confiar no Harvest Bites! <Heart size={16} className="fill-primary" />
+            <div className="bg-muted/30 p-8 rounded-[2rem] border border-border/50 space-y-4">
+              <p className="text-base font-bold text-foreground leading-relaxed">
+                Um de nossos especialistas entrará em contato com você em breve para te passar o <span className="text-primary font-black">orçamento personalizado</span> do seu plano e explicar exatamente como funciona nosso serviço de marmitas gourmet.
+              </p>
+              <p className="text-base font-bold text-foreground leading-relaxed">
+                Transformaremos sua dieta em refeições práticas, nutritivas e deliciosas!
+              </p>
+            </div>
+            <p className="text-sm font-bold text-primary flex items-center justify-center gap-2 uppercase tracking-widest pt-4">
+              Agradecemos por escolher o Harvest Bites! <Heart size={16} className="fill-primary" />
             </p>
           </div>
 
           <Button 
             variant="outline"
-            className="mt-12 w-full h-16 rounded-full font-black border-muted-foreground/20 hover:bg-muted text-primary"
+            className="mt-12 w-full h-16 rounded-full font-black border-muted-foreground/20 hover:bg-muted text-primary uppercase"
             onClick={() => window.location.reload()}
           >
             VOLTAR AO CARDÁPIO
@@ -138,8 +136,8 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
             <Sparkles className="text-primary" size={32} />
           </div>
           <div>
-            <h2 className="text-3xl font-black tracking-tighter text-foreground leading-none">Sua Dieta na Prática</h2>
-            <p className="text-muted-foreground font-medium mt-2">Envie seu plano alimentar para montarmos seu kit ideal.</p>
+            <h2 className="text-3xl font-black tracking-tighter text-foreground leading-none uppercase">Sua Dieta na Prática</h2>
+            <p className="text-muted-foreground font-medium mt-2">Envie seu plano alimentar e deixe o resto com a gente.</p>
           </div>
         </div>
 
@@ -156,14 +154,14 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
                     <Image src={photoDataUri} alt="Plano Alimentar" fill className="object-cover opacity-40" />
                     <div className="relative z-10 flex flex-col items-center gap-2">
                       <CheckCircle2 size={32} className="text-primary" />
-                      <span className="text-xs font-bold text-primary">FOTO CARREGADA</span>
-                      <button onClick={() => setPhotoDataUri(null)} className="text-[10px] font-black text-muted-foreground underline">Remover</button>
+                      <span className="text-xs font-bold text-primary uppercase">FOTO CARREGADA</span>
+                      <button onClick={() => setPhotoDataUri(null)} className="text-[10px] font-black text-muted-foreground underline uppercase">Remover</button>
                     </div>
                   </>
                 ) : (
                   <>
                     <Upload size={32} className="text-muted-foreground mb-3" />
-                    <span className="text-xs font-bold text-muted-foreground text-center px-4">Clique para enviar ou arraste a foto</span>
+                    <span className="text-xs font-bold text-muted-foreground text-center px-4 uppercase">Enviar Foto do Plano</span>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -176,9 +174,9 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ou descreva em texto</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Restrições ou Detalhes</label>
               <Textarea 
-                placeholder="Descreva aqui se possui alguma restrição como leite, lactose..." 
+                placeholder="Descreva aqui se possui alguma restrição como leite, lactose ou outras preferências..." 
                 className="h-48 rounded-3xl bg-muted/30 border-none resize-none p-6 font-medium focus-visible:ring-primary"
                 value={textPlan}
                 onChange={(e) => setTextPlan(e.target.value)}
@@ -198,7 +196,7 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                ENVIAR
+                ENVIAR PLANO
                 <ArrowRight size={20} />
               </div>
             )}
@@ -208,3 +206,4 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
     </div>
   );
 }
+
