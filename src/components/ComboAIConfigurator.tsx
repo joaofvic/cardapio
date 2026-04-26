@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -10,12 +11,15 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { analyzeMealPlan } from "@/ai/flows/analyze-meal-plan-flow";
+import { UserProfile } from "@/app/page";
 
 interface ComboAIConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
+  user: UserProfile | null;
+  onIdentifyRequired: () => void;
 }
 
-export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
+export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: ComboAIConfiguratorProps) {
   const [loading, setLoading] = useState(false);
   const [textPlan, setTextPlan] = useState("");
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
@@ -39,6 +43,15 @@ export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
         variant: "destructive",
         title: "Dados insuficientes",
         description: "Por favor, envie uma foto ou descreva seu plano alimentar.",
+      });
+      return;
+    }
+
+    if (!user) {
+      onIdentifyRequired();
+      toast({
+        title: "Identificação Necessária",
+        description: "Por favor, informe seus dados para continuarmos o envio.",
       });
       return;
     }
@@ -80,11 +93,8 @@ export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
   const handleConfirm = () => {
     if (!recommendations || recommendations.length === 0) return;
 
-    // Criar um combo de 5 marmitas baseado nas recomendações (repetindo se necessário)
     const marmitas: Meal[][] = Array(5).fill([]).map(() => {
-      // Pega 3 itens aleatórios das recomendações para cada marmita
       const items = [...recommendations].sort(() => 0.5 - Math.random()).slice(0, 3);
-      // Se tiver menos de 3 recomendações, completa com outros pratos saudáveis
       while (items.length < 3) {
         items.push(MEALS.filter(m => m.category !== 'Combo')[0]);
       }
@@ -96,7 +106,7 @@ export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
       name: "Combo Plano Alimentar IA",
       category: "Combo",
       description: "Kit personalizado baseado nas suas necessidades nutricionais enviadas.",
-      price: 159.90, // Valor padrão para 5 marmitas
+      price: 159.90,
       protein: marmitas.flat().reduce((acc, m) => acc + m.protein, 0),
       carbs: marmitas.flat().reduce((acc, m) => acc + m.carbs, 0),
       calories: marmitas.flat().reduce((acc, m) => acc + m.calories, 0),
@@ -113,7 +123,7 @@ export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-4 [animation-duration:500ms]">
+    <div className="max-w-2xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-border/40">
         <div className="flex items-center gap-4 mb-8">
           <div className="bg-primary/10 p-4 rounded-3xl">
@@ -177,18 +187,18 @@ export function ComboAIConfigurator({ onAddToCart }: ComboAIConfiguratorProps) {
               {loading ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin" size={20} />
-                  ANALISANDO SEU PLANO...
+                  ENVIANDO...
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  MONTAR MEU KIT COM IA
+                  ENVIAR
                   <ArrowRight size={20} />
                 </div>
               )}
             </Button>
           </div>
         ) : (
-          <div className="space-y-8 animate-in zoom-in-95 [animation-duration:500ms]">
+          <div className="space-y-8 animate-in zoom-in-95 duration-500">
             <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/10">
               <h3 className="font-black text-lg text-primary mb-2 flex items-center gap-2">
                 <Sparkles size={20} />
