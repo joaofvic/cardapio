@@ -33,7 +33,8 @@ import {
   Info,
   Calendar,
   Truck,
-  Pencil
+  Pencil,
+  Gift
 } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
@@ -41,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -91,6 +93,9 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  const FREE_SHIPPING_THRESHOLD = 56.50;
+  const DEFAULT_DELIVERY_FEE = 9.90;
 
   useEffect(() => {
     if (!isOpen) {
@@ -157,8 +162,12 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
-  const deliveryFee = items.length > 0 ? 9.90 : 0;
+  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const deliveryFee = items.length > 0 ? (isFreeShipping ? 0 : DEFAULT_DELIVERY_FEE) : 0;
   const total = subtotal + deliveryFee - discountAmount;
+
+  const freeShippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const amountToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
@@ -300,6 +309,30 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
           <div className="px-6 pb-20">
             <div ref={scrollAreaTopRef} className="h-0 w-0" />
             
+            {items.length > 0 && step === 'cart' && (
+              <div className="mb-6 bg-primary/5 p-4 rounded-2xl border border-primary/10 animate-in fade-in slide-in-from-top-2 [animation-duration:500ms] ease-out">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Gift size={16} className={cn(isFreeShipping ? "text-primary" : "text-muted-foreground")} />
+                    <span className="text-[10px] font-black uppercase tracking-wider">
+                      {isFreeShipping ? "Você ganhou Frete Grátis!" : "Frete Grátis"}
+                    </span>
+                  </div>
+                  {!isFreeShipping && (
+                    <span className="text-[10px] font-black text-primary">
+                      Faltam {formatCurrency(amountToFreeShipping)}
+                    </span>
+                  )}
+                </div>
+                <Progress value={freeShippingProgress} className="h-2 bg-primary/10" />
+                {!isFreeShipping && (
+                  <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">
+                    Adicione mais itens para ganhar frete grátis (acima de R$ 56,50)
+                  </p>
+                )}
+              </div>
+            )}
+
             {selectedCity !== "São Miguel - RN" && (
               <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 [animation-duration:500ms] ease-in-out">
                 <div className="flex gap-2">
@@ -485,8 +518,16 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                     )}
                     <div className="flex justify-between text-xs font-bold text-muted-foreground">
                       <span>Taxa de Entrega</span>
-                      <span>{formatCurrency(deliveryFee)}</span>
+                      <span className={cn(isFreeShipping && "text-primary line-through")}>
+                        {isFreeShipping ? formatCurrency(DEFAULT_DELIVERY_FEE) : formatCurrency(deliveryFee)}
+                      </span>
                     </div>
+                    {isFreeShipping && (
+                      <div className="flex justify-between text-[10px] font-black text-primary uppercase">
+                        <span>Frete Grátis Aplicado</span>
+                        <span>- {formatCurrency(DEFAULT_DELIVERY_FEE)}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4">
