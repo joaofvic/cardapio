@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal } from "@/app/types/meal";
 import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save, User, Users } from "lucide-react";
@@ -34,7 +34,8 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
   const [marmitaCount, setMarmitaCount] = useState(MIN_MARMITAS);
   const [selectedSize, setSelectedSize] = useState(SIZES[0]);
   const [isMultiplePeople, setIsMultiplePeople] = useState<boolean | null>(null);
-  const [householdNames, setHouseholdNames] = useState("");
+  const [peopleCount, setPeopleCount] = useState(2);
+  const [peopleNames, setPeopleNames] = useState<string[]>([]);
   const [marmitas, setMarmitas] = useState<Meal[][]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
@@ -45,15 +46,39 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
       const matchedSize = SIZES.find(s => s.label === initialData.configuration?.selectedSize.label);
       if (matchedSize) setSelectedSize(matchedSize);
       setMarmitas(initialData.configuration.marmitas);
-      // @ts-ignore - householdNames is extra metadata
-      if (initialData.configuration.householdNames) {
+      // @ts-ignore
+      if (initialData.configuration.peopleNames) {
         // @ts-ignore
-        setHouseholdNames(initialData.configuration.householdNames);
+        setPeopleNames(initialData.configuration.peopleNames);
         setIsMultiplePeople(true);
+        // @ts-ignore
+        setPeopleCount(initialData.configuration.peopleNames.length);
       }
       setStep('items');
     }
   }, [initialData]);
+
+  // Inicializa nomes quando a quantidade de pessoas muda
+  useEffect(() => {
+    if (isMultiplePeople) {
+      setPeopleNames(prev => {
+        const newNames = [...prev];
+        // Garante que o primeiro nome seja o do usuário se não estiver definido
+        if (newNames.length === 0 || !newNames[0]) {
+          newNames[0] = user?.name || "Eu";
+        }
+        // Ajusta o tamanho do array conforme peopleCount
+        if (newNames.length < peopleCount) {
+          for (let i = newNames.length; i < peopleCount; i++) {
+            newNames.push("");
+          }
+        } else if (newNames.length > peopleCount) {
+          return newNames.slice(0, peopleCount);
+        }
+        return newNames;
+      });
+    }
+  }, [peopleCount, isMultiplePeople, user]);
 
   const handleStartConfiguration = () => {
     if (!initialData) {
@@ -97,8 +122,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
 
   const currentPrice = marmitaCount * selectedSize.price;
   const isComboComplete = marmitas.length > 0 && marmitas.every(m => m.length === ITEMS_PER_MARMITA);
-  const currentMarmitaComplete = marmitas[activeIndex]?.length === ITEMS_PER_MARMITA;
-
+  
   const handleConfirm = () => {
     if (isComboComplete) {
       const allItems = marmitas.flat();
@@ -118,7 +142,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
           selectedSize,
           marmitas,
           // @ts-ignore
-          householdNames: isMultiplePeople ? householdNames : undefined
+          peopleNames: isMultiplePeople ? peopleNames : undefined
         }
       };
       onAddToCart(comboMeal);
@@ -138,9 +162,9 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
 
   if (step === 'quantity') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom [animation-duration:500ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-bottom duration-500 ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
-          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in [animation-duration:500ms]">
+          <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-in zoom-in duration-500">
             <ShoppingBag className="text-primary" size={40} />
           </div>
           
@@ -184,14 +208,14 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
 
   if (step === 'household') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right duration-500 ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
           <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <Users className="text-primary" size={40} />
           </div>
           
           <h2 className="text-3xl font-black tracking-tighter text-foreground mb-4 leading-none">
-            São para mais de uma pessoa?
+            As refeições são para mais de uma pessoa?
           </h2>
           <p className="text-muted-foreground font-medium mb-10">
             Isso nos ajuda a organizar seu pedido da melhor forma.
@@ -234,16 +258,56 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
           </div>
 
           {isMultiplePeople && (
-            <div className="mb-8 animate-in slide-in-from-top-4 [animation-duration:500ms] text-left">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2 mb-2 block">
-                Nomes das pessoas (A primeira é você: {user?.name || "Cliente"})
-              </label>
-              <Textarea 
-                placeholder="Digite os nomes das demais pessoas..." 
-                className="rounded-2xl bg-muted/30 border-none resize-none p-4 font-medium focus-visible:ring-primary min-h-[100px]"
-                value={householdNames}
-                onChange={(e) => setHouseholdNames(e.target.value)}
-              />
+            <div className="mb-8 animate-in slide-in-from-top-4 duration-500 text-left space-y-6">
+              <div className="bg-muted/30 p-6 rounded-[2rem] space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2 block">
+                  Quantas pessoas no total?
+                </label>
+                <div className="flex items-center gap-6">
+                   <button 
+                    onClick={() => setPeopleCount(Math.max(2, peopleCount - 1))}
+                    className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm active:scale-90"
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <span className="text-2xl font-black text-foreground tabular-nums">{peopleCount}</span>
+                  <button 
+                    onClick={() => setPeopleCount(Math.min(10, peopleCount + 1))}
+                    className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm active:scale-90"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2 block">
+                  Identifique as pessoas
+                </label>
+                {Array.from({ length: peopleCount }).map((_, i) => (
+                  <div key={i} className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors">
+                      <User size={16} />
+                    </div>
+                    <Input 
+                      placeholder={`Pessoa ${i + 1}`}
+                      className="h-12 pl-11 rounded-xl bg-muted/20 border-none font-bold focus-visible:ring-primary"
+                      value={peopleNames[i] || ""}
+                      onChange={(e) => {
+                        const newNames = [...peopleNames];
+                        newNames[i] = e.target.value;
+                        setPeopleNames(newNames);
+                      }}
+                      readOnly={i === 0 && !!user?.name}
+                    />
+                    {i === 0 && user?.name && (
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-primary bg-primary/10 px-2 py-1 rounded-full uppercase tracking-tighter">
+                        VOCÊ
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -256,7 +320,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
               Voltar
             </Button>
             <Button 
-              disabled={isMultiplePeople === null}
+              disabled={isMultiplePeople === null || (isMultiplePeople && peopleNames.some((name, i) => i > 0 && !name))}
               className="flex-[2] h-20 rounded-full text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-tighter"
               onClick={() => setStep('size')}
             >
@@ -271,7 +335,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
 
   if (step === 'size') {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
+      <div className="max-w-md mx-auto py-12 px-4 animate-in slide-in-from-right duration-500 ease-in-out">
         <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-border/40 text-center">
           <div className="bg-primary/10 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <Scale className="text-primary" size={40} />
@@ -336,7 +400,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in [animation-duration:500ms]">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       <div className="bg-primary rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="flex items-center justify-between mb-6">
@@ -376,7 +440,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
               >
                 <span className={cn("text-[8px] font-black uppercase mb-1", isComplete ? "text-primary" : "text-white")}>Marmita {i + 1}</span>
                 {isComplete ? (
-                  <div className="flex flex-col items-center animate-in zoom-in [animation-duration:300ms]">
+                  <div className="flex flex-col items-center animate-in zoom-in duration-300">
                     <CheckCircle2 size={16} />
                     <span className="text-[10px] font-black uppercase mt-1">OK</span>
                   </div>
@@ -421,7 +485,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
                   <ChevronLeft size={14} className="mr-1" /> VOLTAR
                 </Button>
               )}
-              {currentMarmitaComplete && activeIndex < marmitaCount - 1 && (
+              {marmitas[activeIndex]?.length === ITEMS_PER_MARMITA && activeIndex < marmitaCount - 1 && (
                 <Button size="sm" onClick={nextMarmita} className="bg-secondary text-secondary-foreground rounded-full h-8 text-[10px] font-black animate-pulse">
                   PRÓXIMA <ChevronRight size={14} className="ml-1" />
                 </Button>
@@ -462,7 +526,7 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
           </div>
           <div className="space-y-3 mb-8">
             {marmitas[activeIndex]?.map((item, iIdx) => (
-              <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right [animation-duration:300ms]">
+              <div key={`${item.id}-${iIdx}`} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-primary/10 animate-in slide-in-from-right duration-300">
                 <div className="relative h-10 w-10 rounded-xl overflow-hidden shrink-0">
                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                 </div>
