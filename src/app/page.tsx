@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft } from "lucide-react";
+import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
@@ -14,6 +14,7 @@ import { CartSheet } from "@/components/CartSheet";
 import { IdentificationDialog } from "@/components/IdentificationDialog";
 import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 import { ComboManualConfigurator } from "@/components/ComboManualConfigurator";
+import { ComboAIConfigurator } from "@/components/ComboAIConfigurator";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
@@ -270,7 +271,7 @@ export default function HarvestBitesApp() {
               
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black tracking-tighter text-foreground">Escolha seu Estilo</h2>
-                <p className="text-muted-foreground font-medium mt-2">Como você prefere montar seu kit de 5 refeições?</p>
+                <p className="text-muted-foreground font-medium mt-2">Como você prefere montar seu kit de refeições?</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto">
@@ -284,30 +285,25 @@ export default function HarvestBitesApp() {
                     </div>
                     <div>
                       <h4 className="font-black text-foreground group-hover:text-primary uppercase text-sm tracking-widest">Montar Manualmente</h4>
-                      <p className="text-xs font-medium text-muted-foreground mt-1">Eu escolho cada um dos 5 pratos (3 itens por prato)</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">Eu escolho cada item das minhas marmitas</p>
                     </div>
                   </div>
                 </button>
 
                 <button
-                  onClick={() => {
-                    toast({
-                      title: "Plano Alimentar AI",
-                      description: "Esta funcionalidade estará disponível em breve!",
-                    });
-                  }}
+                  onClick={() => setViewMode('combo-ai')}
                   className="w-full flex items-center justify-between p-8 rounded-[2.5rem] bg-primary/5 hover:bg-primary/10 transition-all group border-2 border-primary/10 hover:border-primary/30 text-left"
                 >
                   <div className="flex items-center gap-6">
                     <div className="bg-secondary p-4 rounded-2xl shadow-sm text-secondary-foreground group-hover:scale-110 transition-transform">
-                      <Sparkles size={32} />
+                      <FileText size={32} />
                     </div>
                     <div>
                       <h4 className="font-black text-primary uppercase text-sm tracking-widest flex items-center gap-2">
-                        Plano Alimentar AI
+                        Enviar Meu Plano
                         <span className="bg-primary text-white text-[10px] px-3 py-1 rounded-full font-black">NOVO</span>
                       </h4>
-                      <p className="text-xs font-medium text-muted-foreground mt-1">Sugestão baseada nos seus objetivos de saúde</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">Envie seu plano alimentar para montarmos seu kit</p>
                     </div>
                   </div>
                 </button>
@@ -328,6 +324,24 @@ export default function HarvestBitesApp() {
               </button>
               <ComboManualConfigurator 
                 initialData={editingCombo}
+                onAddToCart={(combo) => {
+                  handleAddToCart(combo, 1);
+                  setViewMode('menu');
+                  setActiveCategory('Todos');
+                }}
+              />
+            </div>
+          )}
+
+          {viewMode === 'combo-ai' && (
+            <div className="animate-in slide-in-from-right [animation-duration:500ms] ease-in-out">
+               <button 
+                onClick={() => setViewMode('combo-type')}
+                className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
+              >
+                <ArrowLeft size={16} /> Voltar
+              </button>
+              <ComboAIConfigurator 
                 onAddToCart={(combo) => {
                   handleAddToCart(combo, 1);
                   setViewMode('menu');
