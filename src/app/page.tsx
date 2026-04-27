@@ -87,11 +87,11 @@ export default function HarvestBitesApp() {
 
   const categories = useMemo(() => {
     const base = [{ id: 'Todos', label: 'Todos' }, { id: 'Combos', label: 'Combo Semanal' }];
-    if (!categoriesData) return base;
+    if (!categoriesData || categoriesData.length === 0) return base;
     
     const dbCategories = categoriesData
       .filter((c: any) => c.id !== 'Combo')
-      .map((c: any) => ({ id: c.label, label: c.label }));
+      .map((c: any) => ({ id: c.id || c.label, label: c.label }));
     
     return [...base, ...dbCategories];
   }, [categoriesData]);
@@ -293,6 +293,11 @@ export default function HarvestBitesApp() {
                 <div className="col-span-full flex flex-col items-center justify-center py-20">
                   <Loader2 className="animate-spin text-primary mb-4" size={40} />
                   <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Carregando cardápio...</p>
+                </div>
+              ) : filteredMeals.length === 0 ? (
+                <div className="col-span-full text-center py-20">
+                  <Utensils className="mx-auto text-muted-foreground/30 mb-4" size={64} />
+                  <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Nenhum prato disponível no momento.</p>
                 </div>
               ) : filteredMeals.map((meal) => (
                 <MealCard 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -226,8 +227,8 @@ export default function AdminDashboard() {
   const { data: orders } = useCollection<Order>(ordersQuery as any);
   const { data: users } = useCollection<UserProfile>(usersQuery as any);
   const { data: leads } = useCollection<MealPlanLead>(leadsQuery as any);
-  const { data: meals } = useCollection<Meal>(mealsQuery as any);
-  const { data: categoriesData } = useCollection<any>(categoriesQuery as any);
+  const { data: meals, loading: loadingMeals } = useCollection<Meal>(mealsQuery as any);
+  const { data: categoriesData, loading: loadingCategories } = useCollection<any>(categoriesQuery as any);
   const { data: coupons } = useCollection<Coupon>(couponsQuery as any);
   const { data: settingsData } = useDoc<SiteSettings>(settingsDocRef as any);
 
@@ -245,21 +246,28 @@ export default function AdminDashboard() {
 
   const currentCategories = categoriesData?.length > 0 ? categoriesData : DEFAULT_CATEGORIES;
 
-  // Auto-seed logic
+  // Auto-seed logic: Executa quando os dados terminam de carregar e estão vazios
   useEffect(() => {
-    if (firestore && meals && meals.length === 0) {
+    if (!firestore || loadingMeals || loadingCategories) return;
+
+    if (meals && meals.length === 0) {
       MEALS.forEach(meal => {
         const mealRef = doc(firestore, "meals", meal.id);
-        setDoc(mealRef, { ...meal, isAvailableForCombo: meal.category !== 'Combo' });
+        setDoc(mealRef, { 
+          ...meal, 
+          isArchived: meal.isArchived || false,
+          isAvailableForCombo: meal.isAvailableForCombo !== undefined ? meal.isAvailableForCombo : meal.category !== 'Combo' 
+        }, { merge: true });
       });
     }
-    if (firestore && categoriesData && (categoriesData.length === 0 || !categoriesData)) {
+
+    if (categoriesData && categoriesData.length === 0) {
       DEFAULT_CATEGORIES.forEach(cat => {
         const catRef = doc(firestore, "categories", cat.id);
-        setDoc(catRef, cat);
+        setDoc(catRef, cat, { merge: true });
       });
     }
-  }, [firestore, meals, categoriesData]);
+  }, [firestore, meals, categoriesData, loadingMeals, loadingCategories]);
 
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -613,7 +621,9 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredMealsForCombo.length === 0 ? (
+                      {loadingMeals ? (
+                        <TableRow><TableCell colSpan={4} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Carregando...</TableCell></TableRow>
+                      ) : filteredMealsForCombo.length === 0 ? (
                         <TableRow><TableCell colSpan={4} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum item encontrado.</TableCell></TableRow>
                       ) : filteredMealsForCombo.map((meal) => (
                         <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
@@ -845,7 +855,9 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredMealsForCatalog.length === 0 ? (
+                      {loadingMeals ? (
+                        <TableRow><TableCell colSpan={4} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Carregando...</TableCell></TableRow>
+                      ) : filteredMealsForCatalog.length === 0 ? (
                         <TableRow><TableCell colSpan={4} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum prato encontrado nesta categoria.</TableCell></TableRow>
                       ) : filteredMealsForCatalog.map((meal) => (
                         <TableRow key={meal.id} className={cn("border-border/40 hover:bg-muted/10", meal.isArchived && "opacity-60 bg-muted/5")}>
