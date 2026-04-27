@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -165,7 +166,7 @@ export default function HarvestBitesApp() {
       />
       
       <header className="flex justify-between items-start mb-8">
-        <div className="animate-in fade-in slide-in-from-left duration-500 ease-in-out">
+        <div className="animate-in fade-in slide-in-from-left duration-300 ease-out">
           <h1 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h1>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
             Refeições Saudáveis & Prontas
@@ -174,7 +175,7 @@ export default function HarvestBitesApp() {
         <div className="flex flex-col items-end gap-2">
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:-rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-500 ease-in-out"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:-rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-300 ease-out"
           >
             {userFirstName ? (
               <div className="flex items-center gap-2 px-1">
@@ -193,7 +194,7 @@ export default function HarvestBitesApp() {
 
           <button 
             onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-500 ease-in-out cursor-pointer"
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-300 ease-out cursor-pointer"
           >
             <MapPin size={14} className="text-primary" />
             <div className="text-right">
@@ -246,7 +247,7 @@ export default function HarvestBitesApp() {
 
         <main className="mt-6 min-h-[60vh]">
           {viewMode === 'menu' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300 ease-out">
               {filteredMeals.map((meal) => (
                 <MealCard 
                   key={meal.id} 
@@ -259,7 +260,7 @@ export default function HarvestBitesApp() {
           )}
 
           {viewMode === 'combo-type' && (
-            <div className="space-y-6 py-8 animate-in slide-in-from-right duration-500 ease-in-out">
+            <div className="space-y-6 py-8 animate-in slide-in-from-right duration-300 ease-out">
               <button 
                 onClick={() => setViewMode('menu')}
                 className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
@@ -310,7 +311,7 @@ export default function HarvestBitesApp() {
           )}
 
           {viewMode === 'combo-manual' && (
-            <div className="animate-in slide-in-from-right duration-500 ease-in-out">
+            <div className="animate-in slide-in-from-right duration-300 ease-out">
                <button 
                 onClick={() => {
                   setEditingCombo(null);
@@ -333,7 +334,7 @@ export default function HarvestBitesApp() {
           )}
 
           {viewMode === 'combo-ai' && (
-            <div className="animate-in slide-in-from-right duration-500 ease-in-out">
+            <div className="animate-in slide-in-from-right duration-300 ease-out">
                <button 
                 onClick={() => setViewMode('combo-type')}
                 className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
