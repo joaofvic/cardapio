@@ -12,6 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { analyzeMealPlan } from "@/ai/flows/analyze-meal-plan-flow";
 import { UserProfile } from "@/app/page";
+import { useFirestore } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 interface ComboAIConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
@@ -25,6 +29,7 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
   const [textPlan, setTextPlan] = useState("");
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,7 +63,31 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
 
     setLoading(true);
     try {
-      // Enviamos para a análise da IA, mas o foco é o contato comercial posterior
+      // 1. Salva o Lead no Firestore para controle do Admin
+      if (firestore) {
+        const leadId = `LEAD-${Date.now()}`;
+        const leadRef = doc(firestore, "leads", leadId);
+        const leadData = {
+          userId: user.phone,
+          customerName: user.name,
+          textPlan,
+          photoDataUri: photoDataUri || null,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        };
+
+        setDoc(leadRef, leadData)
+          .catch(async (error) => {
+            const permissionError = new FirestorePermissionError({
+              path: leadRef.path,
+              operation: 'create',
+              requestResourceData: leadData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+      }
+
+      // 2. Chama a IA (Análise opcional já que o foco é o contato humano)
       await analyzeMealPlan({
         textPlan: textPlan || undefined,
         photoDataUri: photoDataUri || undefined,
@@ -74,7 +103,6 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
     } catch (error) {
       console.error("AI analysis error (handled as lead):", error);
     } finally {
-      // Sempre mostramos a mensagem de sucesso se o formulário foi preenchido e o usuário identificado
       setSubmitted(true);
       setLoading(false);
       toast({
@@ -206,4 +234,3 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
     </div>
   );
 }
-

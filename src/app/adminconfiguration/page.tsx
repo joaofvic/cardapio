@@ -20,7 +20,9 @@ import {
   MoreVertical,
   Calendar,
   Wallet,
-  MapPin
+  MapPin,
+  Sparkles,
+  MessageSquare
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +45,17 @@ import { Order } from "@/app/types/meal";
 import { UserProfile } from "@/app/page";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+
+interface MealPlanLead {
+  id: string;
+  userId: string;
+  customerName: string;
+  textPlan: string;
+  photoDataUri?: string;
+  status: 'pending' | 'responded';
+  createdAt: string;
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -59,22 +72,30 @@ export default function AdminDashboard() {
     return query(collection(firestore, "users"), orderBy("name", "asc"));
   }, [firestore]);
 
+  const leadsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "leads"), orderBy("createdAt", "desc"));
+  }, [firestore]);
+
   const { data: orders, loading: loadingOrders } = useCollection<Order>(ordersQuery as any);
   const { data: users, loading: loadingUsers } = useCollection<UserProfile>(usersQuery as any);
+  const { data: leads, loading: loadingLeads } = useCollection<MealPlanLead>(leadsQuery as any);
 
   const stats = useMemo(() => {
-    if (!orders) return { totalSales: 0, orderCount: 0, activeOrders: 0, revenue: 0 };
+    if (!orders) return { totalSales: 0, orderCount: 0, activeOrders: 0, revenue: 0, pendingLeads: 0 };
     
     const revenue = orders.reduce((acc, order) => acc + order.total, 0);
     const active = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
+    const pendingLeads = leads?.filter(l => l.status === 'pending').length || 0;
     
     return {
       totalSales: orders.length,
       orderCount: orders.length,
       activeOrders: active,
-      revenue
+      revenue,
+      pendingLeads
     };
-  }, [orders]);
+  }, [orders, leads]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     if (!firestore) return;
@@ -112,7 +133,7 @@ export default function AdminDashboard() {
         
         <div className="flex items-center gap-3">
           <Button variant="outline" className="rounded-2xl h-12 px-6 border-none shadow-sm bg-white font-black text-xs uppercase">
-            <Calendar size={16} className="mr-2" /> 16 Dez - 22 Dez
+            <Calendar size={16} className="mr-2" /> {format(new Date(), "dd MMM", { locale: ptBR })}
           </Button>
           <div className="bg-primary text-white p-3 rounded-2xl shadow-xl shadow-primary/20">
             <LayoutDashboard size={24} />
@@ -152,6 +173,25 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Novo Card de Leads de Planos Alimentares */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <Card className="rounded-[2.5rem] border-none shadow-xl shadow-black/5 bg-white p-8 group hover:-translate-y-1 transition-all duration-300">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-4 rounded-[1.5rem] bg-secondary/20 text-secondary-foreground transition-transform group-hover:scale-110">
+                <Sparkles size={28} />
+              </div>
+              <Badge className="bg-secondary text-secondary-foreground border-none font-black text-[9px] uppercase tracking-widest animate-pulse">Ação Necessária</Badge>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Planos Alimentares Enviados</p>
+              <h3 className="text-3xl font-black text-foreground tracking-tighter">{stats.pendingLeads} Clientes aguardando orçamento</h3>
+              <p className="text-[10px] font-bold text-secondary-foreground mt-2 flex items-center gap-1">
+                <MessageSquare size={12} /> Clique na aba Clientes para ver os detalhes
+              </p>
+            </div>
+          </Card>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-white p-1.5 rounded-2xl shadow-sm inline-flex h-14 w-full md:w-auto border border-border/40">
             <TabsTrigger value="dashboard" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
@@ -161,7 +201,7 @@ export default function AdminDashboard() {
               Pedidos
             </TabsTrigger>
             <TabsTrigger value="users" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              Clientes
+              Clientes & Leads
             </TabsTrigger>
           </TabsList>
 
@@ -339,32 +379,48 @@ export default function AdminDashboard() {
           <TabsContent value="users" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white">
               <CardHeader className="p-8">
-                <CardTitle className="text-2xl font-black uppercase tracking-tighter">Base de Clientes</CardTitle>
-                <CardDescription className="font-medium">Visualize todos os usuários que já interagiram com a marca.</CardDescription>
+                <CardTitle className="text-2xl font-black uppercase tracking-tighter">Base de Clientes & Leads de Planos</CardTitle>
+                <CardDescription className="font-medium">Visualize usuários cadastrados e solicitações de orçamentos personalizados.</CardDescription>
               </CardHeader>
               <CardContent className="p-8 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {users?.map((user) => (
-                    <div key={user.phone} className="p-6 rounded-3xl border border-border/40 bg-muted/10 hover:border-primary/30 transition-all group">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="bg-primary/10 p-3 rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
-                          <Users size={24} />
+                  {users?.map((user) => {
+                    const userLeads = leads?.filter(l => l.userId === user.phone);
+                    const pendingCount = userLeads?.filter(l => l.status === 'pending').length || 0;
+
+                    return (
+                      <div key={user.phone} className="p-6 rounded-3xl border border-border/40 bg-muted/10 hover:border-primary/30 transition-all group">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="bg-primary/10 p-3 rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
+                            <Users size={24} />
+                          </div>
+                          <div>
+                            <h4 className="font-black text-sm uppercase">{user.name}</h4>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{user.phone}</p>
+                          </div>
+                          {pendingCount > 0 && (
+                            <Badge className="ml-auto bg-secondary text-secondary-foreground animate-bounce">{pendingCount} Planos Enviados</Badge>
+                          )}
                         </div>
-                        <div>
-                          <h4 className="font-black text-sm uppercase">{user.name}</h4>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase">{user.phone}</p>
+                        <div className="space-y-2 pt-4 border-t border-border/40">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                            <MapPin size={12} /> {user.address?.city || 'Cidade não informada'}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                            <ShoppingBag size={12} /> {orders?.filter(o => o.userId === user.phone).length || 0} Pedidos Realizados
+                          </div>
+                          {userLeads && userLeads.length > 0 && (
+                            <div className="mt-4 p-3 bg-white rounded-2xl border border-border/20 space-y-2">
+                              <p className="text-[9px] font-black uppercase text-primary">Último Plano Enviado:</p>
+                              <p className="text-[10px] font-medium text-muted-foreground line-clamp-2 italic">
+                                "{userLeads[0].textPlan}"
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="space-y-2 pt-4 border-t border-border/40">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-                          <MapPin size={12} /> {user.address?.city || 'Cidade não informada'}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-                          <ShoppingBag size={12} /> {orders?.filter(o => o.userId === user.phone).length || 0} Pedidos Realizados
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -420,8 +476,4 @@ function ActivityItem({ title, subtitle, time, status }: { title: string, subtit
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }

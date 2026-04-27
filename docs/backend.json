@@ -49,6 +49,24 @@
         "address": { "type": "object" }
       },
       "required": ["userId", "items", "total", "status", "createdAt"]
+    },
+    "MealPlanLead": {
+      "title": "Meal Plan Lead",
+      "description": "Information about a customer who sent a meal plan for budget estimation.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "textPlan": { "type": "string" },
+        "photoDataUri": { "type": "string" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "responded"], 
+          "default": "pending" 
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "customerName", "status", "createdAt"]
     }
   },
   "auth": {
@@ -62,6 +80,10 @@
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Stores customer orders."
+    },
+    "/leads/{leadId}": {
+      "schema": "MealPlanLead",
+      "description": "Stores leads from meal plan analysis requests."
     }
   }
 }
