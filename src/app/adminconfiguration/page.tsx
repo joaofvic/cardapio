@@ -224,7 +224,7 @@ export default function AdminDashboard() {
         setDoc(mealRef, { ...meal, isAvailableForCombo: meal.category !== 'Combo' });
       });
     }
-    if (firestore && categoriesData && categoriesData.length === 0) {
+    if (firestore && categoriesData && (categoriesData.length === 0 || !categoriesData)) {
       DEFAULT_CATEGORIES.forEach(cat => {
         const catRef = doc(firestore, "categories", cat.id);
         setDoc(catRef, cat);
@@ -458,6 +458,27 @@ export default function AdminDashboard() {
             <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Montagem de Combos</h1>
             <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Defina quais pratos podem compor as marmitas manuais</p>
           </div>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest bg-white border-none shadow-sm"
+              onClick={() => {
+                setEditingCategory({ label: "" });
+                setIsCategoryDialogOpen(true);
+              }}
+            >
+              <Plus size={20} className="mr-2" /> Nova Categoria
+            </Button>
+            <Button 
+              className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest"
+              onClick={() => {
+                setEditingMeal({ category: 'Chicken', price: 32.90, protein: 30, carbs: 40, calories: 450, isArchived: false, isAvailableForCombo: true });
+                setIsMealDialogOpen(true);
+              }}
+            >
+              <Plus size={20} className="mr-2" /> Novo Item
+            </Button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -481,21 +502,27 @@ export default function AdminDashboard() {
                   <span className="text-xs font-black uppercase">Todos os Itens</span>
                 </button>
                 {currentCategories.filter((c: any) => c.id !== 'Combo').map((cat: any) => (
-                  <button 
+                  <div 
                     key={cat.id}
-                    onClick={() => setComboCategoryFilter(cat.id || cat.label)}
                     className={cn(
-                      "w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left",
-                      comboCategoryFilter === (cat.id || cat.label) ? "bg-primary text-white border-primary" : "bg-muted/20 border-border/40 hover:bg-muted/40"
+                      "group flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
+                      comboCategoryFilter === (cat.id || cat.label) ? "bg-primary/10 border-primary" : "bg-muted/20 border-border/40 hover:bg-muted/40"
                     )}
+                    onClick={() => setComboCategoryFilter(cat.id || cat.label)}
                   >
-                    {cat.id === 'Chicken' && <ChefHat size={14} />}
-                    {cat.id === 'Beef' && <Dna size={14} />}
-                    {cat.id === 'Carbs' && <Wheat size={14} />}
-                    {cat.id === 'Veggie' && <Salad size={14} />}
-                    {cat.id === 'Fish' && <Tag size={14} />}
-                    <span className="text-xs font-black uppercase">{cat.label}</span>
-                  </button>
+                    <div className="flex items-center gap-3">
+                      {cat.id === 'Chicken' && <ChefHat size={14} className={comboCategoryFilter === (cat.id || cat.label) ? "text-primary" : ""} />}
+                      {cat.id === 'Beef' && <Dna size={14} className={comboCategoryFilter === (cat.id || cat.label) ? "text-primary" : ""} />}
+                      {cat.id === 'Carbs' && <Wheat size={14} className={comboCategoryFilter === (cat.id || cat.label) ? "text-primary" : ""} />}
+                      {cat.id === 'Veggie' && <Salad size={14} className={comboCategoryFilter === (cat.id || cat.label) ? "text-primary" : ""} />}
+                      {cat.id === 'Fish' && <Tag size={14} className={comboCategoryFilter === (cat.id || cat.label) ? "text-primary" : ""} />}
+                      <span className={cn("text-xs font-black uppercase", comboCategoryFilter === (cat.id || cat.label) ? "text-primary" : "")}>{cat.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <button onClick={(e) => { e.stopPropagation(); setEditingCategory(cat); setIsCategoryDialogOpen(true); }} className="text-muted-foreground hover:text-primary"><Pencil size={12} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }} className="text-muted-foreground hover:text-red-500"><Trash2 size={12} /></button>
+                    </div>
+                  </div>
                 ))}
               </CardContent>
             </Card>
@@ -518,11 +545,12 @@ export default function AdminDashboard() {
                         <TableHead className="font-black text-[10px] uppercase p-6">Prato / Ingrediente</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Liberado p/ Combo?</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredMealsForCombo.length === 0 ? (
-                        <TableRow><TableCell colSpan={3} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum item encontrado.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={4} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum item encontrado.</TableCell></TableRow>
                       ) : filteredMealsForCombo.map((meal) => (
                         <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
                           <TableCell className="p-6">
@@ -544,6 +572,31 @@ export default function AdminDashboard() {
                               onCheckedChange={() => handleToggleComboAvailability(meal)}
                             />
                           </TableCell>
+                          <TableCell className="p-6 text-center">
+                            <div className="flex justify-center gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white"
+                                onClick={() => {
+                                  setEditingMeal(meal);
+                                  setIsMealDialogOpen(true);
+                                }}
+                                title="Editar"
+                              >
+                                <Pencil size={14} />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white"
+                                onClick={() => handleDeleteMeal(meal.id)}
+                                title="Excluir"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -553,6 +606,123 @@ export default function AdminDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* Meal Editor Dialog */}
+        <Dialog open={isMealDialogOpen} onOpenChange={setIsMealDialogOpen}>
+          <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                {editingMeal?.id ? "Editar Prato" : "Novo Prato"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveMeal} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome do Prato</Label>
+                <Input 
+                  value={editingMeal?.name || ""} 
+                  onChange={(e) => setEditingMeal(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Preço (R$)</Label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    value={editingMeal?.price || ""} 
+                    onChange={(e) => setEditingMeal(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    required
+                    className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Categoria</Label>
+                  <Select 
+                    value={editingMeal?.category} 
+                    onValueChange={(val) => setEditingMeal(prev => ({ ...prev, category: val as any }))}
+                  >
+                    <SelectTrigger className="rounded-xl bg-muted/30 border-none font-bold h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {currentCategories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id || cat.label}>{cat.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Descrição</Label>
+                <Textarea 
+                  value={editingMeal?.description || ""} 
+                  onChange={(e) => setEditingMeal(prev => ({ ...prev, description: e.target.value }))}
+                  className="rounded-xl bg-muted/30 border-none font-bold min-h-[100px]"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Proteína (g)</Label>
+                  <Input type="number" value={editingMeal?.protein || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, protein: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Carbos (g)</Label>
+                  <Input type="number" value={editingMeal?.carbs || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, carbs: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Kcal</Label>
+                  <Input type="number" value={editingMeal?.calories || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, calories: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                 <Switch 
+                  id="combo-avail" 
+                  checked={editingMeal?.isAvailableForCombo !== false} 
+                  onCheckedChange={(val) => setEditingMeal(prev => ({ ...prev, isAvailableForCombo: val }))} 
+                 />
+                 <Label htmlFor="combo-avail" className="text-xs font-bold uppercase">Disponível para Combo Manual</Label>
+              </div>
+              
+              <DialogFooter className="pt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsMealDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
+                <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
+                  <Save size={16} className="mr-2" /> Salvar Prato
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Category Editor Dialog */}
+        <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                {editingCategory?.id ? "Editar Categoria" : "Nova Categoria"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveCategory} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome da Categoria</Label>
+                <Input 
+                  value={editingCategory?.label || ""} 
+                  onChange={(e) => setEditingCategory(prev => ({ ...prev, label: e.target.value }))}
+                  placeholder="Ex: Massas"
+                  required
+                  className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                />
+              </div>
+              <DialogFooter className="pt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsCategoryDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
+                <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
+                  <Save size={16} className="mr-2" /> Salvar Categoria
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
