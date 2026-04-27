@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -63,10 +62,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useDoc } from "@/firebase/firestore/use-doc";
+import { 
+  useCollection, 
+  useDoc, 
+  useFirestore 
+} from "@/firebase";
 import { collection, query, orderBy, limit, doc, updateDoc, setDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
 import { Order } from "@/app/types/meal";
 import { UserProfile } from "@/app/page";
 import { format } from "date-fns";
