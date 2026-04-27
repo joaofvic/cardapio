@@ -67,6 +67,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "customerName", "status", "createdAt"]
+    },
+    "SiteSettings": {
+      "title": "Site Settings",
+      "description": "Global configuration for the application features.",
+      "type": "object",
+      "properties": {
+        "isAiAnalysisEnabled": { "type": "boolean", "default": true },
+        "isCouponsEnabled": { "type": "boolean", "default": true },
+        "isVeggieCategoryVisible": { "type": "boolean", "default": true },
+        "activeCouponCode": { "type": "string", "default": "ADAS" },
+        "couponDiscountPercent": { "type": "number", "default": 50 },
+        "nextDeliveryDate": { "type": "string" },
+        "orderDeadline": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -84,6 +98,10 @@
     "/leads/{leadId}": {
       "schema": "MealPlanLead",
       "description": "Stores leads from meal plan analysis requests."
+    },
+    "/settings/global": {
+      "schema": "SiteSettings",
+      "description": "Global website configuration."
     }
   }
 }

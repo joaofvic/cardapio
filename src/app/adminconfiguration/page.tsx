@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -32,7 +32,9 @@ import {
   ToggleRight,
   Zap,
   Truck,
-  Ticket
+  Ticket,
+  Loader2,
+  ChevronDown
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,8 +58,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, query, orderBy, limit, doc, updateDoc } from "firebase/firestore";
+import { useDoc } from "@/firebase/firestore/use-doc";
+import { collection, query, orderBy, limit, doc, updateDoc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { Order } from "@/app/types/meal";
 import { UserProfile } from "@/app/page";
@@ -65,6 +73,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { useToast } from "@/hooks/use-toast";
 
 interface MealPlanLead {
   id: string;
@@ -74,6 +85,16 @@ interface MealPlanLead {
   photoDataUri?: string;
   status: 'pending' | 'responded';
   createdAt: string;
+}
+
+interface SiteSettings {
+  isAiAnalysisEnabled: boolean;
+  isCouponsEnabled: boolean;
+  isVeggieCategoryVisible: boolean;
+  activeCouponCode: string;
+  couponDiscountPercent: number;
+  nextDeliveryDate: string;
+  orderDeadline: string;
 }
 
 const ALL_SERVICED_CITIES = [
@@ -90,7 +111,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [cityFilter, setCityFilter] = useState("all");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
+  const [expandedOrders, setExpandedOrders] = useState<string[]>([]);
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const ordersQuery = useMemo(() => {
     if (!firestore) return null;
@@ -107,9 +130,25 @@ export default function AdminDashboard() {
     return query(collection(firestore, "leads"), orderBy("createdAt", "desc"));
   }, [firestore]);
 
+  const settingsDocRef = useMemo(() => {
+    if (!firestore) return null;
+    return doc(firestore, "settings", "global");
+  }, [firestore]);
+
   const { data: orders, loading: loadingOrders } = useCollection<Order>(ordersQuery as any);
   const { data: users, loading: loadingUsers } = useCollection<UserProfile>(usersQuery as any);
   const { data: leads, loading: loadingLeads } = useCollection<MealPlanLead>(leadsQuery as any);
+  const { data: settingsData, loading: loadingSettings } = useDoc<SiteSettings>(settingsDocRef as any);
+
+  const settings = settingsData || {
+    isAiAnalysisEnabled: true,
+    isCouponsEnabled: true,
+    isVeggieCategoryVisible: true,
+    activeCouponCode: "ADAS",
+    couponDiscountPercent: 50,
+    nextDeliveryDate: "18/12/2025",
+    orderDeadline: "Quinta-feira"
+  };
 
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -132,16 +171,58 @@ export default function AdminDashboard() {
     };
   }, [orders, leads]);
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+  const handleUpdateStatus = (orderId: string, newStatus: string) => {
     if (!firestore) return;
     const orderRef = doc(firestore, "orders", orderId);
-    await updateDoc(orderRef, { status: newStatus });
+    updateDoc(orderRef, { status: newStatus })
+      .catch(error => {
+        const permissionError = new FirestorePermissionError({
+          path: orderRef.path,
+          operation: 'update',
+          requestResourceData: { status: newStatus }
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    
+    toast({ title: "Status Atualizado", description: `Pedido movido para ${newStatus}` });
   };
 
-  const handleUpdateLeadStatus = async (leadId: string, newStatus: string) => {
+  const handleUpdateLeadStatus = (leadId: string, newStatus: string) => {
     if (!firestore) return;
     const leadRef = doc(firestore, "leads", leadId);
-    await updateDoc(leadRef, { status: newStatus });
+    updateDoc(leadRef, { status: newStatus })
+      .catch(error => {
+        const permissionError = new FirestorePermissionError({
+          path: leadRef.path,
+          operation: 'update',
+          requestResourceData: { status: newStatus }
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+  };
+
+  const handleSaveSettings = (key: keyof SiteSettings, value: any) => {
+    if (!firestore) return;
+    const newSettings = { ...settings, [key]: value };
+    const settingsRef = doc(firestore, "settings", "global");
+    
+    setDoc(settingsRef, newSettings, { merge: true })
+      .catch(error => {
+        const permissionError = new FirestorePermissionError({
+          path: settingsRef.path,
+          operation: 'write',
+          requestResourceData: newSettings
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({ title: "Configuração Salva", description: "As mudanças já estão ativas no site." });
+  };
+
+  const toggleOrderExpansion = (orderId: string) => {
+    setExpandedOrders(prev => 
+      prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -190,7 +271,10 @@ export default function AdminDashboard() {
                     <h4 className="font-black text-sm uppercase">Análise de Plano Alimentar (IA)</h4>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Permite que clientes enviem fotos de suas dietas para orçamento.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settings.isAiAnalysisEnabled} 
+                    onCheckedChange={(val) => handleSaveSettings('isAiAnalysisEnabled', val)}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/20 border border-border/40">
@@ -198,7 +282,10 @@ export default function AdminDashboard() {
                     <h4 className="font-black text-sm uppercase">Cupons de Desconto</h4>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Habilita o campo de inserção de cupons na cesta de compras.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settings.isCouponsEnabled} 
+                    onCheckedChange={(val) => handleSaveSettings('isCouponsEnabled', val)}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/20 border border-border/40">
@@ -206,7 +293,10 @@ export default function AdminDashboard() {
                     <h4 className="font-black text-sm uppercase">Filtro de Categoria "Legumes"</h4>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Exibe ou oculta a categoria de refeições vegetarianas no menu.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settings.isVeggieCategoryVisible} 
+                    onCheckedChange={(val) => handleSaveSettings('isVeggieCategoryVisible', val)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -222,14 +312,21 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Data de Entrega (Rotas)</label>
-                    <Input defaultValue="18/12/2025" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                    <Input 
+                      value={settings.nextDeliveryDate} 
+                      onChange={(e) => handleSaveSettings('nextDeliveryDate', e.target.value)}
+                      className="h-12 rounded-xl bg-muted/30 border-none font-bold" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Limite para Pedidos Semanais</label>
-                    <Input defaultValue="Quinta-feira" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                    <Input 
+                      value={settings.orderDeadline} 
+                      onChange={(e) => handleSaveSettings('orderDeadline', e.target.value)}
+                      className="h-12 rounded-xl bg-muted/30 border-none font-bold" 
+                    />
                   </div>
                 </div>
-                <Button className="w-full h-12 rounded-xl bg-primary font-black uppercase text-xs tracking-widest">Salvar Alterações Logísticas</Button>
               </CardContent>
             </Card>
           </div>
@@ -240,10 +337,26 @@ export default function AdminDashboard() {
                 <div className="relative z-10">
                   <Ticket className="mb-4" size={32} />
                   <h3 className="text-2xl font-black tracking-tighter mb-2 leading-none">CUPOM ATIVO</h3>
-                  <p className="text-white/60 font-bold uppercase text-[9px] tracking-widest mb-6">ADAS - 50% de Desconto</p>
-                  <Button variant="outline" className="w-full h-14 rounded-2xl bg-white/10 border-white/20 text-white font-black uppercase text-xs hover:bg-white/20">
-                    Alterar Cupom
-                  </Button>
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-white/60">Código Atual</label>
+                      <Input 
+                        value={settings.activeCouponCode}
+                        onChange={(e) => handleSaveSettings('activeCouponCode', e.target.value.toUpperCase())}
+                        className="bg-white/10 border-white/20 text-white font-black uppercase placeholder:text-white/30 h-10 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-white/60">Desconto (%)</label>
+                      <Input 
+                        type="number"
+                        value={settings.couponDiscountPercent}
+                        onChange={(e) => handleSaveSettings('couponDiscountPercent', Number(e.target.value))}
+                        className="bg-white/10 border-white/20 text-white font-black h-10 mt-1"
+                      />
+                    </div>
+                  </div>
+                  <Badge className="w-full bg-white text-primary justify-center h-10 font-black uppercase text-xs">Cupom Operacional</Badge>
                 </div>
               </Card>
 
@@ -509,6 +622,7 @@ export default function AdminDashboard() {
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow className="border-none">
+                        <TableHead className="w-[50px]"></TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">ID</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">Cliente</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">Cidade</TableHead>
@@ -519,44 +633,82 @@ export default function AdminDashboard() {
                     </TableHeader>
                     <TableBody>
                       {filteredOrders.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="p-10 text-center font-bold text-muted-foreground">Nenhum pedido encontrado para este filtro.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="p-10 text-center font-bold text-muted-foreground">Nenhum pedido encontrado para este filtro.</TableCell></TableRow>
                       ) : filteredOrders.map((order) => (
-                        <TableRow key={order.id} className="border-border/40 hover:bg-muted/10">
-                          <TableCell className="p-6 font-black text-xs">{order.id}</TableCell>
-                          <TableCell className="p-6">
-                            <div className="flex flex-col">
-                              <span className="font-black text-xs">{order.customerName}</span>
-                              <span className="text-[10px] text-muted-foreground font-bold">{order.userId}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="p-6">
-                            <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase tracking-widest px-3">
-                              {order.address?.city || "S/ INF"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="p-6 text-right font-black text-xs text-primary">{formatCurrency(order.total)}</TableCell>
-                          <TableCell className="p-6 text-center">{getStatusBadge(order.status)}</TableCell>
-                          <TableCell className="p-6 text-center">
-                            <div className="flex justify-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white"
-                                onClick={() => handleUpdateStatus(order.id, 'completed')}
-                              >
-                                <CheckCircle2 size={16} />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white"
-                                onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                              >
-                                <XCircle size={16} />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={order.id}>
+                          <TableRow className="border-border/40 hover:bg-muted/10 cursor-pointer" onClick={() => toggleOrderExpansion(order.id)}>
+                            <TableCell className="p-4 text-center">
+                              <ChevronDown className={cn("text-muted-foreground transition-transform", expandedOrders.includes(order.id) && "rotate-180")} size={16} />
+                            </TableCell>
+                            <TableCell className="p-6 font-black text-xs">{order.id}</TableCell>
+                            <TableCell className="p-6">
+                              <div className="flex flex-col">
+                                <span className="font-black text-xs">{order.customerName}</span>
+                                <span className="text-[10px] text-muted-foreground font-bold">{order.userId}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-6">
+                              <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase tracking-widest px-3">
+                                {order.address?.city || "S/ INF"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="p-6 text-right font-black text-xs text-primary">{formatCurrency(order.total)}</TableCell>
+                            <TableCell className="p-6 text-center">{getStatusBadge(order.status)}</TableCell>
+                            <TableCell className="p-6 text-center">
+                              <div className="flex justify-center gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white"
+                                  onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'completed'); }}
+                                >
+                                  <CheckCircle2 size={16} />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white"
+                                  onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'cancelled'); }}
+                                >
+                                  <XCircle size={16} />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {expandedOrders.includes(order.id) && (
+                            <TableRow className="bg-muted/20 border-none">
+                              <TableCell colSpan={7} className="p-8">
+                                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                                  <h4 className="font-black text-[10px] uppercase tracking-widest text-primary">Itens do Pedido</h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {order.items.map((item, idx) => (
+                                      <div key={idx} className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm">
+                                        <div className="relative h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-border/40">
+                                          <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+                                        </div>
+                                        <div>
+                                          <p className="font-black text-xs leading-none">{item.name}</p>
+                                          <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">{item.quantity} Unidades</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="pt-4 flex flex-col md:flex-row gap-6">
+                                    <div className="flex-1 space-y-1">
+                                      <h4 className="font-black text-[10px] uppercase tracking-widest text-primary">Endereço de Entrega</h4>
+                                      <p className="text-xs font-bold">{order.address?.street}, {order.address?.number}</p>
+                                      <p className="text-[10px] text-muted-foreground font-medium uppercase">{order.address?.neighborhood} - {order.address?.city}</p>
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                      <h4 className="font-black text-[10px] uppercase tracking-widest text-primary">Pagamento</h4>
+                                      <p className="text-xs font-bold uppercase">{order.paymentMethod.replace('_', ' ')}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       ))}
                     </TableBody>
                   </Table>
