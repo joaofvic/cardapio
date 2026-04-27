@@ -76,10 +76,12 @@
         "isAiAnalysisEnabled": { "type": "boolean", "default": true },
         "isCouponsEnabled": { "type": "boolean", "default": true },
         "isVeggieCategoryVisible": { "type": "boolean", "default": true },
+        "isDeliveryOpen": { "type": "boolean", "default": true },
         "activeCouponCode": { "type": "string", "default": "ADAS" },
         "couponDiscountPercent": { "type": "number", "default": 50 },
         "nextDeliveryDate": { "type": "string" },
-        "orderDeadline": { "type": "string" }
+        "orderDeadline": { "type": "string" },
+        "openingHours": { "type": "string", "default": "Segunda a Sábado, das 10h às 22h" }
       }
     },
     "Meal": {

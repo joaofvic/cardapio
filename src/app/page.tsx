@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload, Loader2 } from "lucide-react";
+import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload, Loader2, AlertTriangle, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Meal, CartItem } from "@/app/types/meal";
 import { MealCard } from "@/components/MealCard";
@@ -19,6 +19,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export type UserProfile = {
   name: string;
@@ -104,11 +105,7 @@ export default function HarvestBitesApp() {
       const activeId = activeCategory;
       const matchesCategory = activeId === 'Todos' || 
                              (activeId === 'Combos' && meal.category === 'Combo') ||
-                             meal.category === activeId ||
-                             (activeId === 'Frango' && meal.category === 'Chicken') ||
-                             (activeId === 'Carne' && meal.category === 'Beef') ||
-                             (activeId === 'Peixe' && meal.category === 'Fish') ||
-                             (activeId === 'Legumes' && meal.category === 'Veggie');
+                             meal.category === activeId;
 
       const matchesSearch = meal.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            meal.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -117,6 +114,14 @@ export default function HarvestBitesApp() {
   }, [meals, activeCategory, searchQuery]);
 
   const handleAddToCart = (meal: Meal, quantity: number = 1) => {
+    if (settings && settings.isDeliveryOpen === false) {
+      toast({
+        variant: "destructive",
+        title: "Delivery Fechado",
+        description: "Não estamos aceitando pedidos no momento.",
+      });
+      return;
+    }
     setCartItems(prev => {
       const existing = prev.find(item => item.id === meal.id);
       if (existing) {
@@ -191,6 +196,16 @@ export default function HarvestBitesApp() {
         onCitySelect={handleCitySelect} 
       />
       
+      {settings && settings.isDeliveryOpen === false && (
+        <Alert variant="destructive" className="mb-6 rounded-2xl border-none bg-red-100 text-red-800 animate-in fade-in slide-in-from-top duration-500">
+          <Clock size={18} className="text-red-700" />
+          <AlertTitle className="font-black uppercase text-[10px] tracking-widest mb-1">Loja Fechada no Momento</AlertTitle>
+          <AlertDescription className="text-xs font-bold leading-tight">
+            {settings.openingHours || "Estamos fora do horário comercial."} Sinta-se à vontade para navegar pelo cardápio.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <header className="flex justify-between items-start mb-8">
         <div className="animate-in fade-in slide-in-from-left duration-500 ease-out">
           <h1 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h1>

@@ -47,7 +47,9 @@ import {
   ChefHat,
   Dna,
   Wheat,
-  Salad
+  Salad,
+  Store,
+  CalendarClock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -122,10 +124,12 @@ interface SiteSettings {
   isAiAnalysisEnabled: boolean;
   isCouponsEnabled: boolean;
   isVeggieCategoryVisible: boolean;
+  isDeliveryOpen: boolean;
   activeCouponCode: string;
   couponDiscountPercent: number;
   nextDeliveryDate: string;
   orderDeadline: string;
+  openingHours: string;
 }
 
 const ALL_SERVICED_CITIES = [
@@ -208,10 +212,12 @@ export default function AdminDashboard() {
     isAiAnalysisEnabled: true,
     isCouponsEnabled: true,
     isVeggieCategoryVisible: true,
+    isDeliveryOpen: true,
     activeCouponCode: "ADAS",
     couponDiscountPercent: 50,
     nextDeliveryDate: "18/12/2025",
-    orderDeadline: "Quinta-feira"
+    orderDeadline: "Quinta-feira",
+    openingHours: "Segunda a Sábado, das 10h às 22h"
   };
 
   const currentCategories = categoriesData?.length > 0 ? categoriesData : DEFAULT_CATEGORIES;
@@ -574,27 +580,8 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="p-6 text-center">
                             <div className="flex justify-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white"
-                                onClick={() => {
-                                  setEditingMeal(meal);
-                                  setIsMealDialogOpen(true);
-                                }}
-                                title="Editar"
-                              >
-                                <Pencil size={14} />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white"
-                                onClick={() => handleDeleteMeal(meal.id)}
-                                title="Excluir"
-                              >
-                                <Trash2 size={14} />
-                              </Button>
+                              <button onClick={(e) => { e.stopPropagation(); setEditingMeal(meal); setIsMealDialogOpen(true); }} className="text-muted-foreground hover:text-primary"><Pencil size={14} /></button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeleteMeal(meal.id); }} className="text-muted-foreground hover:text-red-500"><Trash2 size={14} /></button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -688,7 +675,7 @@ export default function AdminDashboard() {
               <DialogFooter className="pt-6">
                 <Button type="button" variant="ghost" onClick={() => setIsMealDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
                 <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
-                  <Save size={16} className="mr-2" /> Salvar Prato
+                  <Save size={16} className="mr-2" /> Salvar Item
                 </Button>
               </DialogFooter>
             </form>
@@ -1069,6 +1056,45 @@ export default function AdminDashboard() {
             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
               <CardHeader className="p-8">
                 <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Store className="text-primary" size={20} /> Operação do Delivery
+                </CardTitle>
+                <CardDescription>Abra ou feche a loja para pedidos em tempo real.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0 space-y-6">
+                <div className={cn(
+                  "flex items-center justify-between p-6 rounded-3xl border transition-all",
+                  settings.isDeliveryOpen ? "bg-primary/5 border-primary/20" : "bg-red-50 border-red-200"
+                )}>
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase">Status do Delivery</h4>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      {settings.isDeliveryOpen ? "A loja está aberta e aceitando pedidos." : "A loja está fechada. Clientes verão o aviso no site."}
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={settings.isDeliveryOpen} 
+                    onCheckedChange={(val) => handleSaveSettings('isDeliveryOpen', val)}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-1 px-1">
+                    <CalendarClock className="text-primary" size={16} />
+                    <h3 className="font-black text-[10px] uppercase tracking-wider">Horário de Funcionamento (Visível p/ Cliente)</h3>
+                  </div>
+                  <Input 
+                    value={settings.openingHours} 
+                    onChange={(e) => handleSaveSettings('openingHours', e.target.value)}
+                    placeholder="Ex: Segunda a Sábado, das 10h às 22h"
+                    className="h-12 rounded-xl bg-muted/30 border-none font-bold"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+              <CardHeader className="p-8">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
                   <Zap className="text-primary" size={20} /> Funções e Visibilidade
                 </CardTitle>
                 <CardDescription>Ative ou desative recursos que os clientes podem acessar no site.</CardDescription>
@@ -1192,15 +1218,25 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-muted/20 p-6 md:p-10 font-body">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-        <div>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-3 hover:translate-x-[-4px] transition-transform"
-          >
-            <ArrowLeft size={16} /> Voltar ao Site
-          </button>
-          <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Harvest Admin</h1>
-          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Painel de Controle Estratégico</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-3 hover:translate-x-[-4px] transition-transform"
+            >
+              <ArrowLeft size={16} /> Voltar ao Site
+            </button>
+            <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Harvest Admin</h1>
+            <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Painel de Controle Estratégico</p>
+          </div>
+          {settingsData && (
+            <Badge className={cn(
+              "rounded-full h-8 px-4 font-black uppercase text-[10px] tracking-widest border-none ml-4",
+              settings.isDeliveryOpen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            )}>
+              {settings.isDeliveryOpen ? "Loja Aberta" : "Loja Fechada"}
+            </Badge>
+          )}
         </div>
         
         <div className="flex items-center gap-3">
