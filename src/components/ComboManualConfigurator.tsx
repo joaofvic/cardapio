@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -6,7 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Meal } from "@/app/types/meal";
-import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save, User, Users, ChefHat, Dna, Wheat, Salad, Tag } from "lucide-react";
+import { 
+  Plus, 
+  Minus, 
+  CheckCircle2, 
+  Utensils, 
+  ChevronRight, 
+  ChevronLeft, 
+  ShoppingBag, 
+  Scale, 
+  Save, 
+  User, 
+  Users, 
+  ChefHat, 
+  Dna, 
+  Wheat, 
+  Salad, 
+  Tag,
+  Layers 
+} from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { UserProfile } from "@/app/page";
