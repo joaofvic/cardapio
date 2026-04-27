@@ -46,12 +46,10 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
       const matchedSize = SIZES.find(s => s.label === initialData.configuration?.selectedSize.label);
       if (matchedSize) setSelectedSize(matchedSize);
       setMarmitas(initialData.configuration.marmitas);
-      // @ts-ignore
+      
       if (initialData.configuration.peopleNames) {
-        // @ts-ignore
         setPeopleNames(initialData.configuration.peopleNames);
         setIsMultiplePeople(true);
-        // @ts-ignore
         setPeopleCount(initialData.configuration.peopleNames.length);
       }
       setStep('items');
@@ -141,7 +139,6 @@ export function ComboManualConfigurator({ onAddToCart, initialData, user }: Comb
           marmitaCount,
           selectedSize,
           marmitas,
-          // @ts-ignore
           peopleNames: isMultiplePeople ? peopleNames : undefined
         }
       };

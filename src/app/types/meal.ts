@@ -17,6 +17,7 @@ export interface Meal {
     marmitaCount: number;
     selectedSize: { label: string; price: number };
     marmitas: Meal[][];
+    peopleNames?: string[];
   };
 }
 
