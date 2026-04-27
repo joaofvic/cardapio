@@ -25,7 +25,8 @@ import {
   MessageSquare,
   FileText,
   Eye,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -198,10 +199,10 @@ export default function AdminDashboard() {
             color="amber"
           />
           <StatCard 
-            title="Clientes" 
-            value={users?.length.toString() || "0"} 
-            icon={Users} 
-            trend="Novas capturas: 3" 
+            title="Planos Pendentes" 
+            value={stats.pendingLeads.toString()} 
+            icon={FileText} 
+            trend="Aguardando retorno" 
             color="purple"
           />
         </div>
@@ -234,6 +235,31 @@ export default function AdminDashboard() {
               VER TODAS AS SOLICITAÇÕES <ChevronRight size={16} className="ml-2" />
             </Button>
           </Card>
+
+          <Card className="rounded-[2.5rem] border-none shadow-xl shadow-black/5 bg-white p-8 group hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-4 rounded-[1.5rem] bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                  <ShieldCheck size={28} />
+                </div>
+              </div>
+              <div className="space-y-1 mb-8">
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Admin</p>
+                <h3 className="text-3xl font-black text-foreground tracking-tighter">
+                  Configurações do Site
+                </h3>
+                <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1">
+                  <Settings size={12} /> Gerencie funções visíveis para o cliente
+                </p>
+              </div>
+            </div>
+            <Button 
+              className="w-full h-14 rounded-2xl bg-muted text-foreground hover:bg-muted/90 font-black uppercase text-xs tracking-widest transition-all"
+              onClick={() => setActiveTab("settings")}
+            >
+              GERENCIAR FUNÇÕES <ChevronRight size={16} className="ml-2" />
+            </Button>
+          </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -245,10 +271,13 @@ export default function AdminDashboard() {
               Pedidos
             </TabsTrigger>
             <TabsTrigger value="leads" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              Solicitações de Planos
+              Solicitações
             </TabsTrigger>
             <TabsTrigger value="users" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
               Clientes
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              Admin
             </TabsTrigger>
           </TabsList>
 
@@ -526,6 +555,26 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white">
+              <CardHeader className="p-8">
+                <CardTitle className="text-2xl font-black uppercase tracking-tighter">Funções de Admin</CardTitle>
+                <CardDescription className="font-medium">Configure as funções e visibilidade de recursos para os clientes.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   <div className="p-8 rounded-[2rem] bg-muted/30 border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center text-center">
+                     <Settings className="text-muted-foreground mb-4" size={32} />
+                     <h4 className="font-black text-sm uppercase mb-2">Novas Funções em Breve</h4>
+                     <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase">
+                       Aqui você poderá configurar cupons, prazos de entrega e visibilidade de categorias.
+                     </p>
+                   </div>
                 </div>
               </CardContent>
             </Card>
