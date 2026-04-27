@@ -98,6 +98,9 @@ export default function HarvestBitesApp() {
   const filteredMeals = useMemo(() => {
     if (!meals) return [];
     return meals.filter(meal => {
+      // Ocultar produtos arquivados
+      if (meal.isArchived) return false;
+
       const activeId = activeCategory;
       const matchesCategory = activeId === 'Todos' || 
                              (activeId === 'Combos' && meal.category === 'Combo') ||

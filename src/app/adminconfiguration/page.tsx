@@ -41,7 +41,8 @@ import {
   Utensils,
   Layers,
   Tag,
-  Save
+  Save,
+  Archive
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -293,6 +294,20 @@ export default function AdminDashboard() {
     toast({ title: "Prato Removido", description: "O item foi excluído do catálogo." });
   };
 
+  const handleArchiveMeal = (meal: Meal) => {
+    if (!firestore) return;
+    const mealRef = doc(firestore, "meals", meal.id);
+    const newStatus = !meal.isArchived;
+    updateDoc(mealRef, { isArchived: newStatus })
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: mealRef.path, operation: 'update', requestResourceData: { isArchived: newStatus } }));
+      });
+    toast({ 
+      title: newStatus ? "Prato Arquivado" : "Prato Reativado", 
+      description: newStatus ? "O prato não aparecerá mais no site do cliente." : "O prato voltou a ser visível no site." 
+    });
+  };
+
   const handleSaveMeal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firestore || !editingMeal) return;
@@ -301,7 +316,8 @@ export default function AdminDashboard() {
       ...editingMeal,
       id: editingMeal.id || doc(collection(firestore, "meals")).id,
       imageUrl: editingMeal.imageUrl || "https://picsum.photos/seed/harvest/400/300",
-      rating: editingMeal.rating || 5.0
+      rating: editingMeal.rating || 5.0,
+      isArchived: editingMeal.isArchived || false
     };
 
     const mealRef = doc(firestore, "meals", mealData.id);
@@ -393,7 +409,7 @@ export default function AdminDashboard() {
             <Button 
               className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest"
               onClick={() => {
-                setEditingMeal({ category: 'Chicken', price: 32.90, protein: 30, carbs: 40, calories: 450 });
+                setEditingMeal({ category: 'Chicken', price: 32.90, protein: 30, carbs: 40, calories: 450, isArchived: false });
                 setIsMealDialogOpen(true);
               }}
             >
@@ -425,13 +441,16 @@ export default function AdminDashboard() {
                     </TableHeader>
                     <TableBody>
                       {meals?.map((meal) => (
-                        <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
+                        <TableRow key={meal.id} className={cn("border-border/40 hover:bg-muted/10", meal.isArchived && "opacity-60 bg-muted/5")}>
                           <TableCell className="p-6">
                             <div className="flex items-center gap-4">
                               <div className="relative h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-border/40">
                                 <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
                               </div>
-                              <span className="font-black text-xs uppercase">{meal.name}</span>
+                              <div className="flex flex-col">
+                                <span className="font-black text-xs uppercase">{meal.name}</span>
+                                {meal.isArchived && <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mt-1">Arquivado</span>}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="p-6">
@@ -458,14 +477,25 @@ export default function AdminDashboard() {
                                   setEditingMeal(meal);
                                   setIsMealDialogOpen(true);
                                 }}
+                                title="Editar"
                               >
                                 <Pencil size={14} />
                               </Button>
                               <Button 
                                 size="sm" 
                                 variant="outline" 
+                                className={cn("h-8 w-8 p-0 rounded-lg hover:text-white", meal.isArchived ? "bg-amber-100 text-amber-600 hover:bg-amber-600" : "hover:bg-amber-500")}
+                                onClick={() => handleArchiveMeal(meal)}
+                                title={meal.isArchived ? "Reativar" : "Arquivar"}
+                              >
+                                <Archive size={14} />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
                                 className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white"
                                 onClick={() => handleDeleteMeal(meal.id)}
+                                title="Excluir"
                               >
                                 <Trash2 size={14} />
                               </Button>

@@ -98,7 +98,8 @@
         "rating": { "type": "number" },
         "isDairyFree": { "type": "boolean" },
         "isGlutenFree": { "type": "boolean" },
-        "isSugarFree": { "type": "boolean" }
+        "isSugarFree": { "type": "boolean" },
+        "isArchived": { "type": "boolean", "default": false }
       },
       "required": ["name", "category", "price"]
     },
