@@ -38,7 +38,9 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Utensils
+  Utensils,
+  Layers,
+  Tag
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,7 +63,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/select";
 import {
   Collapsible,
   CollapsibleContent,
@@ -112,6 +114,14 @@ const ALL_SERVICED_CITIES = [
   "Pau dos Ferros - RN",
   "Ereré - CE",
   "Pereiro - CE"
+];
+
+const CATALOG_CATEGORIES = [
+  { id: 'Chicken', label: 'Frango', count: MEALS.filter(m => m.category === 'Chicken').length },
+  { id: 'Beef', label: 'Carne', count: MEALS.filter(m => m.category === 'Beef').length },
+  { id: 'Fish', label: 'Peixe', count: MEALS.filter(m => m.category === 'Fish').length },
+  { id: 'Veggie', label: 'Legumes', count: MEALS.filter(m => m.category === 'Veggie').length },
+  { id: 'Combo', label: 'Combo', count: MEALS.filter(m => m.category === 'Combo').length }
 ];
 
 export default function AdminDashboard() {
@@ -260,73 +270,111 @@ export default function AdminDashboard() {
               <ArrowLeft size={16} /> Voltar ao Painel
             </button>
             <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Gestão do Cardápio</h1>
-            <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Adicione ou remova pratos do site</p>
+            <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Adicione ou remova pratos e categorias do site</p>
           </div>
-          <Button className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest">
-            <Plus size={20} className="mr-2" /> Novo Prato
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="outline" className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest bg-white border-none shadow-sm">
+              <Plus size={20} className="mr-2" /> Nova Categoria
+            </Button>
+            <Button className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest">
+              <Plus size={20} className="mr-2" /> Novo Prato
+            </Button>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-8">
-          <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
-            <CardHeader className="p-8">
-              <CardTitle className="text-2xl font-black uppercase tracking-tighter">Produtos Ativos</CardTitle>
-              <CardDescription>Lista de todos os pratos atualmente visíveis para o cliente.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-0">
-               <div className="rounded-3xl border border-border/40 overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow className="border-none">
-                      <TableHead className="font-black text-[10px] uppercase p-6">Prato</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase p-6 text-right">Preço</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase p-6 text-center">Nutrição</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase p-6 text-center">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MEALS.map((meal) => (
-                      <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
-                        <TableCell className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="relative h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-border/40">
-                              <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
-                            </div>
-                            <span className="font-black text-xs uppercase">{meal.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-6">
-                          <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase px-3">
-                            {meal.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-6 text-right font-black text-xs">
-                          {formatCurrency(meal.price)}
-                        </TableCell>
-                        <TableCell className="p-6 text-center">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[9px] font-bold text-muted-foreground uppercase">{meal.calories} kcal</span>
-                            <span className="text-[9px] font-bold text-primary uppercase">{meal.protein}g Prot</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-6 text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white">
-                              <Pencil size={14} />
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white">
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        </TableCell>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3 space-y-8">
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+              <CardHeader className="p-8">
+                <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Package className="text-primary" size={24} /> Pratos Ativos
+                </CardTitle>
+                <CardDescription>Lista de todos os pratos atualmente visíveis para o cliente.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0">
+                 <div className="rounded-3xl border border-border/40 overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow className="border-none">
+                        <TableHead className="font-black text-[10px] uppercase p-6">Prato</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-right">Preço</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Nutrição</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {MEALS.map((meal) => (
+                        <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
+                          <TableCell className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className="relative h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-border/40">
+                                <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
+                              </div>
+                              <span className="font-black text-xs uppercase">{meal.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-6">
+                            <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase px-3">
+                              {meal.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="p-6 text-right font-black text-xs">
+                            {formatCurrency(meal.price)}
+                          </TableCell>
+                          <TableCell className="p-6 text-center">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[9px] font-bold text-muted-foreground uppercase">{meal.calories} kcal</span>
+                              <span className="text-[9px] font-bold text-primary uppercase">{meal.protein}g Prot</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-6 text-center">
+                            <div className="flex justify-center gap-2">
+                              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white">
+                                <Pencil size={14} />
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white">
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-1">
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden h-fit sticky top-6">
+              <CardHeader className="p-8 pb-4">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Layers className="text-primary" size={20} /> Categorias
+                </CardTitle>
+                <CardDescription>Estrutura do Menu</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0 space-y-3">
+                {CATALOG_CATEGORIES.map((cat) => (
+                  <div key={cat.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/40 hover:bg-primary/5 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white p-2 rounded-lg shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                        <Tag size={14} />
+                      </div>
+                      <span className="text-xs font-black uppercase">{cat.label}</span>
+                    </div>
+                    <Badge className="bg-muted text-muted-foreground border-none font-black text-[10px]">{cat.count}</Badge>
+                  </div>
+                ))}
+                <div className="pt-4">
+                  <div className="bg-primary/5 p-4 rounded-2xl border border-dashed border-primary/20 text-center">
+                    <p className="text-[10px] font-bold text-primary uppercase">Total: {CATALOG_CATEGORIES.length} Categorias</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
