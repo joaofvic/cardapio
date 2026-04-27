@@ -19,13 +19,15 @@ import {
   Filter,
   MoreVertical,
   Calendar,
-  Wallet
+  Wallet,
+  MapPin
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { 
   Table, 
   TableBody, 
@@ -358,7 +360,7 @@ export default function AdminDashboard() {
                           <MapPin size={12} /> {user.address?.city || 'Cidade não informada'}
                         </div>
                         <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-                          <ShoppingBag size={12} /> 0 Pedidos Realizados
+                          <ShoppingBag size={12} /> {orders?.filter(o => o.userId === user.phone).length || 0} Pedidos Realizados
                         </div>
                       </div>
                     </div>
