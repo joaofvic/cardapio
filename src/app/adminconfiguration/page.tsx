@@ -86,18 +86,17 @@ export default function AdminDashboard() {
   const { data: leads, loading: loadingLeads } = useCollection<MealPlanLead>(leadsQuery as any);
 
   const stats = useMemo(() => {
-    if (!orders) return { totalSales: 0, orderCount: 0, activeOrders: 0, revenue: 0, pendingLeads: 0 };
-    
-    const revenue = orders.reduce((acc, order) => acc + order.total, 0);
-    const active = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
-    const pendingLeads = leads?.filter(l => l.status === 'pending').length || 0;
+    const revenue = orders?.reduce((acc, order) => acc + order.total, 0) || 0;
+    const active = orders?.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length || 0;
+    const pendingLeadsCount = leads?.filter(l => l.status === 'pending').length || 0;
+    const totalOrders = orders?.length || 0;
     
     return {
-      totalSales: orders.length,
-      orderCount: orders.length,
+      totalSales: totalOrders,
+      orderCount: totalOrders,
       activeOrders: active,
       revenue,
-      pendingLeads
+      pendingLeads: pendingLeadsCount
     };
   }, [orders, leads]);
 
@@ -197,7 +196,9 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-1 mb-8">
                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Planos Alimentares Enviados</p>
-                <h3 className="text-3xl font-black text-foreground tracking-tighter">{stats.pendingLeads} Clientes aguardando orçamento</h3>
+                <h3 className="text-3xl font-black text-foreground tracking-tighter">
+                  {stats.pendingLeads} {stats.pendingLeads === 1 ? 'Cliente' : 'Clientes'} aguardando retorno
+                </h3>
                 <p className="text-[10px] font-bold text-secondary-foreground mt-2 flex items-center gap-1">
                   <MessageSquare size={12} /> Transforme leads em vendas hoje mesmo
                 </p>
@@ -302,8 +303,8 @@ export default function AdminDashboard() {
                   <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
                   <div className="relative z-10">
                     <h3 className="text-2xl font-black tracking-tighter mb-2 leading-none">META SEMANAL</h3>
-                    <p className="text-white/60 font-bold uppercase text-[9px] tracking-widest mb-6">Eficiência de Resposta</p>
-                    <Progress value={85} className="h-3 bg-white/20 mb-6" />
+                    <p className="text-white/60 font-bold uppercase text-[9px] tracking-widest mb-6">Estamos em 82% da meta</p>
+                    <Progress value={82} className="h-3 bg-white/20 mb-6" />
                     <Button className="w-full h-14 rounded-2xl bg-white text-primary font-black uppercase text-xs hover:bg-white/90">
                       Analisar Tendências
                     </Button>
