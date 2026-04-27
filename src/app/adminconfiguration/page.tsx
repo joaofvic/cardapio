@@ -68,6 +68,16 @@ interface MealPlanLead {
   createdAt: string;
 }
 
+const ALL_SERVICED_CITIES = [
+  "São Miguel - RN",
+  "Coronel João Pessoa - RN",
+  "Dr. Severiano - RN",
+  "Encanto - RN",
+  "Pau dos Ferros - RN",
+  "Ereré - CE",
+  "Pereiro - CE"
+];
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [cityFilter, setCityFilter] = useState("all");
@@ -91,12 +101,6 @@ export default function AdminDashboard() {
   const { data: orders, loading: loadingOrders } = useCollection<Order>(ordersQuery as any);
   const { data: users, loading: loadingUsers } = useCollection<UserProfile>(usersQuery as any);
   const { data: leads, loading: loadingLeads } = useCollection<MealPlanLead>(leadsQuery as any);
-
-  const availableCities = useMemo(() => {
-    if (!orders) return [];
-    const cities = orders.map(o => o.address?.city).filter(Boolean);
-    return Array.from(new Set(cities)) as string[];
-  }, [orders]);
 
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -349,7 +353,7 @@ export default function AdminDashboard() {
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-border/40">
                         <SelectItem value="all" className="font-bold text-xs uppercase">Todas as Cidades</SelectItem>
-                        {availableCities.map(city => (
+                        {ALL_SERVICED_CITIES.map(city => (
                           <SelectItem key={city} value={city} className="font-bold text-xs uppercase">{city}</SelectItem>
                         ))}
                       </SelectContent>
