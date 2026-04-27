@@ -37,7 +37,8 @@ import {
   ChevronDown,
   Plus,
   Pencil,
-  Trash2
+  Trash2,
+  Utensils
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
