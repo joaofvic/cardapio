@@ -138,6 +138,7 @@ const DEFAULT_CATEGORIES = [
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [cityFilter, setCityFilter] = useState("all");
+  const [mealCategoryFilter, setMealCategoryFilter] = useState("all");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [isCatalogMode, setIsCatalogMode] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<string[]>([]);
@@ -221,6 +222,12 @@ export default function AdminDashboard() {
     if (cityFilter === "all") return orders;
     return orders.filter(o => o.address?.city === cityFilter);
   }, [orders, cityFilter]);
+
+  const filteredMealsForCatalog = useMemo(() => {
+    if (!meals) return [];
+    if (mealCategoryFilter === "all") return meals;
+    return meals.filter(m => m.category === mealCategoryFilter);
+  }, [meals, mealCategoryFilter]);
 
   const stats = useMemo(() => {
     const revenue = orders?.reduce((acc, order) => acc + order.total, 0) || 0;
@@ -422,10 +429,25 @@ export default function AdminDashboard() {
           <div className="lg:col-span-3 space-y-8">
             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
               <CardHeader className="p-8">
-                <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
-                  <Package className="text-primary" size={24} /> Pratos Ativos
-                </CardTitle>
-                <CardDescription>Lista de todos os pratos atualmente visíveis para o cliente.</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                      <Package className="text-primary" size={24} /> Pratos Ativos
+                    </CardTitle>
+                    <CardDescription>
+                      {mealCategoryFilter === "all" ? "Lista de todos os pratos no cardápio." : `Exibindo apenas pratos da categoria "${mealCategoryFilter}".`}
+                    </CardDescription>
+                  </div>
+                  {mealCategoryFilter !== "all" && (
+                    <Button 
+                      variant="ghost" 
+                      className="rounded-xl font-black text-[10px] uppercase tracking-widest text-primary"
+                      onClick={() => setMealCategoryFilter("all")}
+                    >
+                      Limpar Filtro
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-8 pt-0">
                  <div className="rounded-3xl border border-border/40 overflow-hidden">
@@ -440,7 +462,9 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {meals?.map((meal) => (
+                      {filteredMealsForCatalog.length === 0 ? (
+                        <TableRow><TableCell colSpan={5} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum prato encontrado nesta categoria.</TableCell></TableRow>
+                      ) : filteredMealsForCatalog.map((meal) => (
                         <TableRow key={meal.id} className={cn("border-border/40 hover:bg-muted/10", meal.isArchived && "opacity-60 bg-muted/5")}>
                           <TableCell className="p-6">
                             <div className="flex items-center gap-4">
@@ -516,34 +540,60 @@ export default function AdminDashboard() {
                 <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
                   <Layers className="text-primary" size={20} /> Categorias
                 </CardTitle>
-                <CardDescription>Estrutura do Menu</CardDescription>
+                <CardDescription>Clique para filtrar a tabela</CardDescription>
               </CardHeader>
               <CardContent className="p-8 pt-0 space-y-3">
                 {currentCategories.map((cat: any) => (
-                  <div key={cat.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/40 hover:bg-primary/5 transition-colors group">
+                  <div 
+                    key={cat.id} 
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-2xl border transition-all group cursor-pointer",
+                      mealCategoryFilter === (cat.id || cat.label) 
+                        ? "bg-primary/10 border-primary/40 shadow-inner" 
+                        : "bg-muted/20 border-border/40 hover:bg-primary/5"
+                    )}
+                    onClick={() => setMealCategoryFilter(prev => prev === (cat.id || cat.label) ? "all" : (cat.id || cat.label))}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="bg-white p-2 rounded-lg shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                      <div className={cn(
+                        "p-2 rounded-lg shadow-sm transition-colors",
+                        mealCategoryFilter === (cat.id || cat.label) ? "bg-primary text-white" : "bg-white group-hover:bg-primary group-hover:text-white"
+                      )}>
                         <Tag size={14} />
                       </div>
-                      <span className="text-xs font-black uppercase">{cat.label}</span>
+                      <span className={cn(
+                        "text-xs font-black uppercase transition-colors",
+                        mealCategoryFilter === (cat.id || cat.label) ? "text-primary" : "text-foreground"
+                      )}>
+                        {cat.label}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                        <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingCategory(cat);
                           setIsCategoryDialogOpen(true);
                         }}
                         className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
+                        title="Editar"
                        >
                          <Pencil size={12} />
                        </button>
                        <button 
-                        onClick={() => handleDeleteCategory(cat.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCategory(cat.id);
+                        }}
                         className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-all"
+                        title="Excluir"
                        >
                          <Trash2 size={12} />
                        </button>
-                      <Badge className="bg-muted text-muted-foreground border-none font-black text-[10px]">
+                      <Badge className={cn(
+                        "border-none font-black text-[10px] transition-colors",
+                        mealCategoryFilter === (cat.id || cat.label) ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                      )}>
                         {meals?.filter(m => m.category === (cat.id || cat.label)).length || 0}
                       </Badge>
                     </div>
