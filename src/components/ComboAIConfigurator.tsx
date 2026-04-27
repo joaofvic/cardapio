@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Meal } from "@/app/types/meal";
-import { MEALS } from "@/app/data/meals";
 import { Upload, FileText, Sparkles, Loader2, CheckCircle2, ArrowRight, Heart } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -13,17 +12,18 @@ import { cn } from "@/lib/utils";
 import { analyzeMealPlan } from "@/ai/flows/analyze-meal-plan-flow";
 import { UserProfile } from "@/app/page";
 import { useFirestore } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
 interface ComboAIConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
   user: UserProfile | null;
+  availableMeals: Meal[];
   onIdentifyRequired: () => void;
 }
 
-export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: ComboAIConfiguratorProps) {
+export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdentifyRequired }: ComboAIConfiguratorProps) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [textPlan, setTextPlan] = useState("");
@@ -63,7 +63,6 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
 
     setLoading(true);
     try {
-      // 1. Salva o Lead no Firestore para controle do Admin
       if (firestore) {
         const leadId = `LEAD-${Date.now()}`;
         const leadRef = doc(firestore, "leads", leadId);
@@ -87,11 +86,10 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
           });
       }
 
-      // 2. Chama a IA (Análise opcional já que o foco é o contato humano)
       await analyzeMealPlan({
         textPlan: textPlan || undefined,
         photoDataUri: photoDataUri || undefined,
-        availableMeals: MEALS.filter(m => m.category !== 'Combo').map(m => ({
+        availableMeals: availableMeals.filter(m => m.category !== 'Combo').map(m => ({
           name: m.name,
           category: m.category,
           description: m.description,
@@ -101,7 +99,7 @@ export function ComboAIConfigurator({ onAddToCart, user, onIdentifyRequired }: C
         }))
       });
     } catch (error) {
-      console.error("AI analysis error (handled as lead):", error);
+      console.error("AI analysis error:", error);
     } finally {
       setSubmitted(true);
       setLoading(false);

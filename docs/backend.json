@@ -81,6 +81,36 @@
         "nextDeliveryDate": { "type": "string" },
         "orderDeadline": { "type": "string" }
       }
+    },
+    "Meal": {
+      "title": "Meal",
+      "description": "A meal available in the catalog.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "calories": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "rating": { "type": "number" },
+        "isDairyFree": { "type": "boolean" },
+        "isGlutenFree": { "type": "boolean" },
+        "isSugarFree": { "type": "boolean" }
+      },
+      "required": ["name", "category", "price"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A product category.",
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "id": { "type": "string" }
+      },
+      "required": ["label", "id"]
     }
   },
   "auth": {
@@ -102,6 +132,14 @@
     "/settings/global": {
       "schema": "SiteSettings",
       "description": "Global website configuration."
+    },
+    "/meals/{mealId}": {
+      "schema": "Meal",
+      "description": "Stores the restaurant's menu items."
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Stores the product categories."
     }
   }
 }

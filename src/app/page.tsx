@@ -3,9 +3,8 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload } from "lucide-react";
+import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { MEALS } from "@/app/data/meals";
 import { Meal, CartItem } from "@/app/types/meal";
 import { MealCard } from "@/components/MealCard";
 import { BottomNav } from "@/components/BottomNav";
@@ -18,6 +17,8 @@ import { ComboAIConfigurator } from "@/components/ComboAIConfigurator";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import { useCollection, useFirestore, useDoc } from "@/firebase";
+import { collection, query, orderBy, doc } from "firebase/firestore";
 
 export type UserProfile = {
   name: string;
@@ -48,7 +49,27 @@ export default function HarvestBitesApp() {
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   const [editingCombo, setEditingCombo] = useState<Meal | null>(null);
   
+  const firestore = useFirestore();
   const { toast } = useToast();
+
+  const mealsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "meals"), orderBy("name", "asc"));
+  }, [firestore]);
+
+  const categoriesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "categories"), orderBy("label", "asc"));
+  }, [firestore]);
+
+  const settingsDocRef = useMemo(() => {
+    if (!firestore) return null;
+    return doc(firestore, "settings", "global");
+  }, [firestore]);
+
+  const { data: meals, loading: loadingMeals } = useCollection<Meal>(mealsQuery as any);
+  const { data: categoriesData } = useCollection<any>(categoriesQuery as any);
+  const { data: settings } = useDoc<any>(settingsDocRef as any);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('harvest_bites_user');
@@ -63,32 +84,34 @@ export default function HarvestBitesApp() {
     }
   }, []);
 
-  const categories = [
-    { id: 'Todos', label: 'Todos' },
-    { id: 'Combos', label: 'Combo Semanal' },
-    { id: 'Frango', label: 'Frango' },
-    { id: 'Carne', label: 'Carne' },
-    { id: 'Peixe', label: 'Peixe' },
-    { id: 'Legumes', label: 'Legumes' }
-  ];
+  const categories = useMemo(() => {
+    const base = [{ id: 'Todos', label: 'Todos' }, { id: 'Combos', label: 'Combo Semanal' }];
+    if (!categoriesData) return base;
+    
+    const dbCategories = categoriesData
+      .filter((c: any) => c.id !== 'Combo')
+      .map((c: any) => ({ id: c.label, label: c.label }));
+    
+    return [...base, ...dbCategories];
+  }, [categoriesData]);
 
   const filteredMeals = useMemo(() => {
-    return MEALS.filter(meal => {
-      const categoryMap: Record<string, string> = {
-        'Todos': 'All',
-        'Combos': 'Combo',
-        'Frango': 'Chicken',
-        'Carne': 'Beef',
-        'Peixe': 'Fish',
-        'Legumes': 'Veggie'
-      };
-      const activeId = categoryMap[activeCategory] || 'All';
-      const matchesCategory = activeId === 'All' || meal.category === activeId;
+    if (!meals) return [];
+    return meals.filter(meal => {
+      const activeId = activeCategory;
+      const matchesCategory = activeId === 'Todos' || 
+                             (activeId === 'Combos' && meal.category === 'Combo') ||
+                             meal.category === activeId ||
+                             (activeId === 'Frango' && meal.category === 'Chicken') ||
+                             (activeId === 'Carne' && meal.category === 'Beef') ||
+                             (activeId === 'Peixe' && meal.category === 'Fish') ||
+                             (activeId === 'Legumes' && meal.category === 'Veggie');
+
       const matchesSearch = meal.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            meal.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [meals, activeCategory, searchQuery]);
 
   const handleAddToCart = (meal: Meal, quantity: number = 1) => {
     setCartItems(prev => {
@@ -248,7 +271,12 @@ export default function HarvestBitesApp() {
         <main className="mt-6 min-h-[60vh]">
           {viewMode === 'menu' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300 ease-out">
-              {filteredMeals.map((meal) => (
+              {loadingMeals ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-20">
+                  <Loader2 className="animate-spin text-primary mb-4" size={40} />
+                  <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Carregando cardápio...</p>
+                </div>
+              ) : filteredMeals.map((meal) => (
                 <MealCard 
                   key={meal.id} 
                   meal={meal} 
@@ -323,6 +351,7 @@ export default function HarvestBitesApp() {
               </button>
               <ComboManualConfigurator 
                 user={user}
+                availableMeals={meals || []}
                 initialData={editingCombo}
                 onAddToCart={(combo) => {
                   handleAddToCart(combo, 1);
@@ -343,6 +372,7 @@ export default function HarvestBitesApp() {
               </button>
               <ComboAIConfigurator 
                 user={user}
+                availableMeals={meals || []}
                 onIdentifyRequired={() => setIsProfileOpen(true)}
                 onAddToCart={(combo) => {
                   handleAddToCart(combo, 1);

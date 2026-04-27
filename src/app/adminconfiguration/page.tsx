@@ -40,7 +40,8 @@ import {
   Trash2,
   Utensils,
   Layers,
-  Tag
+  Tag,
+  Save
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,12 +70,21 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   useCollection, 
   useDoc, 
   useFirestore 
 } from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, setDoc, deleteDoc, addDoc, getDocs } from "firebase/firestore";
 import { Order, Meal } from "@/app/types/meal";
 import { MEALS } from "@/app/data/meals";
 import { UserProfile } from "@/app/page";
@@ -116,12 +126,12 @@ const ALL_SERVICED_CITIES = [
   "Pereiro - CE"
 ];
 
-const CATALOG_CATEGORIES = [
-  { id: 'Chicken', label: 'Frango', count: MEALS.filter(m => m.category === 'Chicken').length },
-  { id: 'Beef', label: 'Carne', count: MEALS.filter(m => m.category === 'Beef').length },
-  { id: 'Fish', label: 'Peixe', count: MEALS.filter(m => m.category === 'Fish').length },
-  { id: 'Veggie', label: 'Legumes', count: MEALS.filter(m => m.category === 'Veggie').length },
-  { id: 'Combo', label: 'Combo', count: MEALS.filter(m => m.category === 'Combo').length }
+const DEFAULT_CATEGORIES = [
+  { id: 'Chicken', label: 'Frango' },
+  { id: 'Beef', label: 'Carne' },
+  { id: 'Fish', label: 'Peixe' },
+  { id: 'Veggie', label: 'Legumes' },
+  { id: 'Combo', label: 'Combo' }
 ];
 
 export default function AdminDashboard() {
@@ -130,6 +140,12 @@ export default function AdminDashboard() {
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [isCatalogMode, setIsCatalogMode] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<string[]>([]);
+  
+  // Dialog States
+  const [isMealDialogOpen, setIsMealDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [editingMeal, setEditingMeal] = useState<Partial<Meal> | null>(null);
+
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -148,15 +164,27 @@ export default function AdminDashboard() {
     return query(collection(firestore, "leads"), orderBy("createdAt", "desc"));
   }, [firestore]);
 
+  const mealsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "meals"), orderBy("name", "asc"));
+  }, [firestore]);
+
+  const categoriesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "categories"), orderBy("label", "asc"));
+  }, [firestore]);
+
   const settingsDocRef = useMemo(() => {
     if (!firestore) return null;
     return doc(firestore, "settings", "global");
   }, [firestore]);
 
-  const { data: orders, loading: loadingOrders } = useCollection<Order>(ordersQuery as any);
-  const { data: users, loading: loadingUsers } = useCollection<UserProfile>(usersQuery as any);
-  const { data: leads, loading: loadingLeads } = useCollection<MealPlanLead>(leadsQuery as any);
-  const { data: settingsData, loading: loadingSettings } = useDoc<SiteSettings>(settingsDocRef as any);
+  const { data: orders } = useCollection<Order>(ordersQuery as any);
+  const { data: users } = useCollection<UserProfile>(usersQuery as any);
+  const { data: leads } = useCollection<MealPlanLead>(leadsQuery as any);
+  const { data: meals } = useCollection<Meal>(mealsQuery as any);
+  const { data: categoriesData } = useCollection<any>(categoriesQuery as any);
+  const { data: settingsData } = useDoc<SiteSettings>(settingsDocRef as any);
 
   const settings = settingsData || {
     isAiAnalysisEnabled: true,
@@ -167,6 +195,26 @@ export default function AdminDashboard() {
     nextDeliveryDate: "18/12/2025",
     orderDeadline: "Quinta-feira"
   };
+
+  const currentCategories = categoriesData?.length > 0 ? categoriesData : DEFAULT_CATEGORIES;
+
+  // Auto-seed logic
+  useEffect(() => {
+    if (firestore && meals && meals.length === 0) {
+      // Seed meals if collection is empty
+      MEALS.forEach(meal => {
+        const mealRef = doc(firestore, "meals", meal.id);
+        setDoc(mealRef, meal);
+      });
+    }
+    if (firestore && categoriesData && categoriesData.length === 0) {
+      // Seed categories if collection is empty
+      DEFAULT_CATEGORIES.forEach(cat => {
+        const catRef = doc(firestore, "categories", cat.id);
+        setDoc(catRef, cat);
+      });
+    }
+  }, [firestore, meals, categoriesData]);
 
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -237,6 +285,37 @@ export default function AdminDashboard() {
     toast({ title: "Configuração Salva", description: "As mudanças já estão ativas no site." });
   };
 
+  const handleDeleteMeal = (mealId: string) => {
+    if (!firestore) return;
+    const mealRef = doc(firestore, "meals", mealId);
+    deleteDoc(mealRef).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: mealRef.path, operation: 'delete' }));
+    });
+    toast({ title: "Prato Removido", description: "O item foi excluído do catálogo." });
+  };
+
+  const handleSaveMeal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firestore || !editingMeal) return;
+
+    const mealData = {
+      ...editingMeal,
+      id: editingMeal.id || doc(collection(firestore, "meals")).id,
+      imageUrl: editingMeal.imageUrl || "https://picsum.photos/seed/harvest/400/300",
+      rating: editingMeal.rating || 5.0
+    };
+
+    const mealRef = doc(firestore, "meals", mealData.id);
+    setDoc(mealRef, mealData, { merge: true })
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: mealRef.path, operation: 'write', requestResourceData: mealData }));
+      });
+
+    setIsMealDialogOpen(false);
+    setEditingMeal(null);
+    toast({ title: "Prato Salvo", description: "As informações foram atualizadas no catálogo." });
+  };
+
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders(prev => 
       prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
@@ -273,10 +352,22 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Adicione ou remova pratos e categorias do site</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest bg-white border-none shadow-sm">
+            <Button 
+              variant="outline" 
+              className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest bg-white border-none shadow-sm"
+              onClick={() => {
+                toast({ title: "Em Breve", description: "A gestão avançada de categorias estará disponível na próxima atualização." });
+              }}
+            >
               <Plus size={20} className="mr-2" /> Nova Categoria
             </Button>
-            <Button className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest">
+            <Button 
+              className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest"
+              onClick={() => {
+                setEditingMeal({ category: 'Chicken', price: 32.90, protein: 30, carbs: 40, calories: 450 });
+                setIsMealDialogOpen(true);
+              }}
+            >
               <Plus size={20} className="mr-2" /> Novo Prato
             </Button>
           </div>
@@ -304,7 +395,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {MEALS.map((meal) => (
+                      {meals?.map((meal) => (
                         <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
                           <TableCell className="p-6">
                             <div className="flex items-center gap-4">
@@ -330,10 +421,23 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="p-6 text-center">
                             <div className="flex justify-center gap-2">
-                              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-primary hover:text-white"
+                                onClick={() => {
+                                  setEditingMeal(meal);
+                                  setIsMealDialogOpen(true);
+                                }}
+                              >
                                 <Pencil size={14} />
                               </Button>
-                              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-red-500 hover:text-white"
+                                onClick={() => handleDeleteMeal(meal.id)}
+                              >
                                 <Trash2 size={14} />
                               </Button>
                             </div>
@@ -356,7 +460,7 @@ export default function AdminDashboard() {
                 <CardDescription>Estrutura do Menu</CardDescription>
               </CardHeader>
               <CardContent className="p-8 pt-0 space-y-3">
-                {CATALOG_CATEGORIES.map((cat) => (
+                {currentCategories.map((cat: any) => (
                   <div key={cat.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/40 hover:bg-primary/5 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className="bg-white p-2 rounded-lg shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
@@ -364,18 +468,94 @@ export default function AdminDashboard() {
                       </div>
                       <span className="text-xs font-black uppercase">{cat.label}</span>
                     </div>
-                    <Badge className="bg-muted text-muted-foreground border-none font-black text-[10px]">{cat.count}</Badge>
+                    <Badge className="bg-muted text-muted-foreground border-none font-black text-[10px]">
+                      {meals?.filter(m => m.category === (cat.id || cat.label)).length || 0}
+                    </Badge>
                   </div>
                 ))}
-                <div className="pt-4">
-                  <div className="bg-primary/5 p-4 rounded-2xl border border-dashed border-primary/20 text-center">
-                    <p className="text-[10px] font-bold text-primary uppercase">Total: {CATALOG_CATEGORIES.length} Categorias</p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        {/* Meal Editor Dialog */}
+        <Dialog open={isMealDialogOpen} onOpenChange={setIsMealDialogOpen}>
+          <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                {editingMeal?.id ? "Editar Prato" : "Novo Prato"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveMeal} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome do Prato</Label>
+                <Input 
+                  value={editingMeal?.name || ""} 
+                  onChange={(e) => setEditingMeal(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Preço (R$)</Label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    value={editingMeal?.price || ""} 
+                    onChange={(e) => setEditingMeal(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    required
+                    className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Categoria</Label>
+                  <Select 
+                    value={editingMeal?.category} 
+                    onValueChange={(val) => setEditingMeal(prev => ({ ...prev, category: val as any }))}
+                  >
+                    <SelectTrigger className="rounded-xl bg-muted/30 border-none font-bold h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {currentCategories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id || cat.label}>{cat.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Descrição</Label>
+                <Textarea 
+                  value={editingMeal?.description || ""} 
+                  onChange={(e) => setEditingMeal(prev => ({ ...prev, description: e.target.value }))}
+                  className="rounded-xl bg-muted/30 border-none font-bold min-h-[100px]"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Proteína (g)</Label>
+                  <Input type="number" value={editingMeal?.protein || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, protein: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Carbos (g)</Label>
+                  <Input type="number" value={editingMeal?.carbs || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, carbs: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Kcal</Label>
+                  <Input type="number" value={editingMeal?.calories || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, calories: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
+                </div>
+              </div>
+              <DialogFooter className="pt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsMealDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
+                <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
+                  <Save size={16} className="mr-2" /> Salvar Prato
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -698,8 +878,8 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {loadingOrders ? (
-                          <TableRow><TableCell colSpan={5} className="p-10 text-center font-bold text-muted-foreground">Carregando dados...</TableCell></TableRow>
+                        {orders?.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="p-10 text-center font-bold text-muted-foreground">Sem pedidos ainda...</TableCell></TableRow>
                         ) : orders?.slice(0, 5).map((order) => (
                           <TableRow key={order.id} className="border-border/40 hover:bg-muted/20 transition-colors">
                             <TableCell className="p-6 font-black text-xs text-primary">{order.id}</TableCell>
@@ -902,9 +1082,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {loadingLeads ? (
-                        <TableRow><TableCell colSpan={6} className="p-10 text-center font-bold">Carregando leads...</TableCell></TableRow>
-                      ) : leads?.length === 0 ? (
+                      {leads?.length === 0 ? (
                         <TableRow><TableCell colSpan={6} className="p-10 text-center font-bold">Nenhum plano enviado ainda.</TableCell></TableRow>
                       ) : leads?.map((lead) => (
                         <TableRow key={lead.id} className="border-border/40 hover:bg-muted/10">
