@@ -145,6 +145,7 @@ export default function AdminDashboard() {
   const [isMealDialogOpen, setIsMealDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Partial<Meal> | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -201,14 +202,12 @@ export default function AdminDashboard() {
   // Auto-seed logic
   useEffect(() => {
     if (firestore && meals && meals.length === 0) {
-      // Seed meals if collection is empty
       MEALS.forEach(meal => {
         const mealRef = doc(firestore, "meals", meal.id);
         setDoc(mealRef, meal);
       });
     }
     if (firestore && categoriesData && categoriesData.length === 0) {
-      // Seed categories if collection is empty
       DEFAULT_CATEGORIES.forEach(cat => {
         const catRef = doc(firestore, "categories", cat.id);
         setDoc(catRef, cat);
@@ -316,6 +315,35 @@ export default function AdminDashboard() {
     toast({ title: "Prato Salvo", description: "As informações foram atualizadas no catálogo." });
   };
 
+  const handleSaveCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firestore || !editingCategory) return;
+
+    const categoryData = {
+      ...editingCategory,
+      id: editingCategory.id || editingCategory.label.replace(/\s+/g, '-').toLowerCase()
+    };
+
+    const categoryRef = doc(firestore, "categories", categoryData.id);
+    setDoc(categoryRef, categoryData, { merge: true })
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryRef.path, operation: 'write', requestResourceData: categoryData }));
+      });
+
+    setIsCategoryDialogOpen(false);
+    setEditingCategory(null);
+    toast({ title: "Categoria Salva", description: "A categoria foi atualizada no menu." });
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    if (!firestore) return;
+    const categoryRef = doc(firestore, "categories", categoryId);
+    deleteDoc(categoryRef).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryRef.path, operation: 'delete' }));
+    });
+    toast({ title: "Categoria Removida", description: "A categoria foi excluída do menu." });
+  };
+
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders(prev => 
       prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
@@ -356,7 +384,8 @@ export default function AdminDashboard() {
               variant="outline" 
               className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest bg-white border-none shadow-sm"
               onClick={() => {
-                toast({ title: "Em Breve", description: "A gestão avançada de categorias estará disponível na próxima atualização." });
+                setEditingCategory({ label: "" });
+                setIsCategoryDialogOpen(true);
               }}
             >
               <Plus size={20} className="mr-2" /> Nova Categoria
@@ -468,9 +497,26 @@ export default function AdminDashboard() {
                       </div>
                       <span className="text-xs font-black uppercase">{cat.label}</span>
                     </div>
-                    <Badge className="bg-muted text-muted-foreground border-none font-black text-[10px]">
-                      {meals?.filter(m => m.category === (cat.id || cat.label)).length || 0}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                       <button 
+                        onClick={() => {
+                          setEditingCategory(cat);
+                          setIsCategoryDialogOpen(true);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
+                       >
+                         <Pencil size={12} />
+                       </button>
+                       <button 
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-all"
+                       >
+                         <Trash2 size={12} />
+                       </button>
+                      <Badge className="bg-muted text-muted-foreground border-none font-black text-[10px]">
+                        {meals?.filter(m => m.category === (cat.id || cat.label)).length || 0}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -551,6 +597,35 @@ export default function AdminDashboard() {
                 <Button type="button" variant="ghost" onClick={() => setIsMealDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
                 <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
                   <Save size={16} className="mr-2" /> Salvar Prato
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Category Editor Dialog */}
+        <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                {editingCategory?.id ? "Editar Categoria" : "Nova Categoria"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveCategory} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome da Categoria</Label>
+                <Input 
+                  value={editingCategory?.label || ""} 
+                  onChange={(e) => setEditingCategory(prev => ({ ...prev, label: e.target.value }))}
+                  placeholder="Ex: Massas"
+                  required
+                  className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                />
+              </div>
+              <DialogFooter className="pt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsCategoryDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
+                <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
+                  <Save size={16} className="mr-2" /> Salvar Categoria
                 </Button>
               </DialogFooter>
             </form>
