@@ -43,7 +43,8 @@ import {
   Tag,
   Save,
   Archive,
-  RefreshCcw
+  RefreshCcw,
+  ChefHat
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -149,6 +150,7 @@ export default function AdminDashboard() {
   const [mealCategoryFilter, setMealCategoryFilter] = useState("all");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [isCatalogMode, setIsCatalogMode] = useState(false);
+  const [isComboMode, setIsComboMode] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<string[]>([]);
   
   // Dialog States
@@ -428,6 +430,76 @@ export default function AdminDashboard() {
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
+  if (isComboMode) {
+    return (
+      <div className="min-h-screen bg-muted/20 p-6 md:p-10 font-body animate-in fade-in slide-in-from-right duration-500">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+          <div>
+            <button 
+              onClick={() => setIsComboMode(false)}
+              className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-3 hover:translate-x-[-4px] transition-transform"
+            >
+              <ArrowLeft size={16} /> Voltar ao Painel
+            </button>
+            <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Montagem de Combos</h1>
+            <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Defina quais pratos podem compor as marmitas manuais</p>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 gap-8">
+          <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+            <CardHeader className="p-8">
+              <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                <ChefHat className="text-primary" size={24} /> Itens Disponíveis para Combo
+              </CardTitle>
+              <CardDescription>Ative os pratos que o cliente pode escolher ao montar seu kit personalizado.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              <div className="rounded-3xl border border-border/40 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow className="border-none">
+                      <TableHead className="font-black text-[10px] uppercase p-6">Prato</TableHead>
+                      <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
+                      <TableHead className="font-black text-[10px] uppercase p-6 text-center">Liberado p/ Combo?</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {meals?.filter(m => m.category !== 'Combo').length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="p-10 text-center font-bold text-muted-foreground">Carregando pratos...</TableCell></TableRow>
+                    ) : meals?.filter(m => m.category !== 'Combo').map((meal) => (
+                      <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
+                        <TableCell className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="relative h-10 w-10 rounded-lg overflow-hidden shrink-0 border border-border/40">
+                              <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
+                            </div>
+                            <span className="font-black text-xs uppercase">{meal.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-6">
+                          <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase px-3">
+                            {meal.category}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="p-6 text-center">
+                          <Switch 
+                            checked={meal.isAvailableForCombo !== false} 
+                            onCheckedChange={() => handleToggleComboAvailability(meal)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (isCatalogMode) {
     return (
       <div className="min-h-screen bg-muted/20 p-6 md:p-10 font-body animate-in fade-in slide-in-from-right duration-500">
@@ -497,13 +569,12 @@ export default function AdminDashboard() {
                         <TableHead className="font-black text-[10px] uppercase p-6">Prato</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-right">Preço</TableHead>
-                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">No Combo?</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredMealsForCatalog.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum prato encontrado nesta categoria.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={4} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum prato encontrado nesta categoria.</TableCell></TableRow>
                       ) : filteredMealsForCatalog.map((meal) => (
                         <TableRow key={meal.id} className={cn("border-border/40 hover:bg-muted/10", meal.isArchived && "opacity-60 bg-muted/5")}>
                           <TableCell className="p-6">
@@ -524,13 +595,6 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="p-6 text-right font-black text-xs">
                             {formatCurrency(meal.price)}
-                          </TableCell>
-                          <TableCell className="p-6 text-center">
-                            <Switch 
-                              checked={meal.isAvailableForCombo !== false} 
-                              onCheckedChange={() => handleToggleComboAvailability(meal)}
-                              className="scale-75"
-                            />
                           </TableCell>
                           <TableCell className="p-6 text-center">
                             <div className="flex justify-center gap-2">
@@ -715,17 +779,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-border/20">
-                <div className="space-y-0.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest">Disponível no Combo?</Label>
-                  <p className="text-[9px] text-muted-foreground font-bold">Permite selecionar como item na montagem manual.</p>
-                </div>
-                <Switch 
-                  checked={editingMeal?.isAvailableForCombo !== false} 
-                  onCheckedChange={(val) => setEditingMeal(prev => ({ ...prev, isAvailableForCombo: val }))}
-                />
-              </div>
-
               <DialogFooter className="pt-6">
                 <Button type="button" variant="ghost" onClick={() => setIsMealDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
                 <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">
@@ -980,7 +1033,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <Card className="rounded-[2.5rem] border-none shadow-xl shadow-black/5 bg-white p-8 group hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-start mb-6">
@@ -993,19 +1046,16 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-1 mb-8">
                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Planos Alimentares Enviados</p>
-                <h3 className="text-3xl font-black text-foreground tracking-tighter">
-                  {stats.pendingLeads} {stats.pendingLeads === 1 ? 'Cliente' : 'Clientes'} aguardando retorno
+                <h3 className="text-3xl font-black text-foreground tracking-tighter line-clamp-2">
+                  {stats.pendingLeads} Solicit.
                 </h3>
-                <p className="text-[10px] font-bold text-secondary-foreground mt-2 flex items-center gap-1">
-                  <MessageSquare size={12} /> Transforme leads em vendas hoje mesmo
-                </p>
               </div>
             </div>
             <Button 
               className="w-full h-14 rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 font-black uppercase text-xs tracking-widest transition-all"
               onClick={() => setActiveTab("leads")}
             >
-              VER TODAS AS SOLICITAÇÕES <ChevronRight size={16} className="ml-2" />
+              VER LEADS <ChevronRight size={16} className="ml-2" />
             </Button>
           </Card>
 
@@ -1019,18 +1069,37 @@ export default function AdminDashboard() {
               <div className="space-y-1 mb-8">
                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Catálogo Digital</p>
                 <h3 className="text-3xl font-black text-foreground tracking-tighter">
-                  Gestão do Cardápio
+                  Cardápio
                 </h3>
-                <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1">
-                  <Utensils size={12} /> Adicione ou remova pratos e categorias
-                </p>
               </div>
             </div>
             <Button 
               className="w-full h-14 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 font-black uppercase text-xs tracking-widest transition-all"
               onClick={() => setIsCatalogMode(true)}
             >
-              GERENCIAR CATÁLOGO <ChevronRight size={16} className="ml-2" />
+              GERENCIAR <ChevronRight size={16} className="ml-2" />
+            </Button>
+          </Card>
+
+          <Card className="rounded-[2.5rem] border-none shadow-xl shadow-black/5 bg-white p-8 group hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-4 rounded-[1.5rem] bg-amber-100 text-amber-600 transition-transform group-hover:scale-110">
+                  <ChefHat size={28} />
+                </div>
+              </div>
+              <div className="space-y-1 mb-8">
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Personalização</p>
+                <h3 className="text-3xl font-black text-foreground tracking-tighter">
+                  Combos
+                </h3>
+              </div>
+            </div>
+            <Button 
+              className="w-full h-14 rounded-2xl bg-amber-600 text-white hover:bg-amber-700 font-black uppercase text-xs tracking-widest transition-all"
+              onClick={() => setIsComboMode(true)}
+            >
+              MONTAGEM <ChevronRight size={16} className="ml-2" />
             </Button>
           </Card>
 
@@ -1044,18 +1113,15 @@ export default function AdminDashboard() {
               <div className="space-y-1 mb-8">
                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Admin</p>
                 <h3 className="text-3xl font-black text-foreground tracking-tighter">
-                  Configurações do Site
+                  Config. Site
                 </h3>
-                <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1">
-                  <Settings size={12} /> Gerencie funções visíveis para o cliente
-                </p>
               </div>
             </div>
             <Button 
               className="w-full h-14 rounded-2xl bg-muted text-foreground hover:bg-muted/90 font-black uppercase text-xs tracking-widest transition-all"
               onClick={() => setIsSettingsMode(true)}
             >
-              GERENCIAR FUNÇÕES <ChevronRight size={16} className="ml-2" />
+              AJUSTES <ChevronRight size={16} className="ml-2" />
             </Button>
           </Card>
         </div>
