@@ -41,6 +41,13 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, orderBy, limit, doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
@@ -63,7 +70,7 @@ interface MealPlanLead {
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
   const firestore = useFirestore();
 
   const ordersQuery = useMemo(() => {
@@ -84,6 +91,18 @@ export default function AdminDashboard() {
   const { data: orders, loading: loadingOrders } = useCollection<Order>(ordersQuery as any);
   const { data: users, loading: loadingUsers } = useCollection<UserProfile>(usersQuery as any);
   const { data: leads, loading: loadingLeads } = useCollection<MealPlanLead>(leadsQuery as any);
+
+  const availableCities = useMemo(() => {
+    if (!orders) return [];
+    const cities = orders.map(o => o.address?.city).filter(Boolean);
+    return Array.from(new Set(cities)) as string[];
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    if (!orders) return [];
+    if (cityFilter === "all") return orders;
+    return orders.filter(o => o.address?.city === cityFilter);
+  }, [orders, cityFilter]);
 
   const stats = useMemo(() => {
     const revenue = orders?.reduce((acc, order) => acc + order.total, 0) || 0;
@@ -320,7 +339,21 @@ export default function AdminDashboard() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <CardTitle className="text-2xl font-black uppercase tracking-tighter">Gestão de Pedidos</CardTitle>
-                    <CardDescription className="font-medium">Total de {orders?.length || 0} pedidos processados.</CardDescription>
+                    <CardDescription className="font-medium">Total de {filteredOrders.length} pedidos encontrados.</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Filtrar por Cidade:</label>
+                    <Select value={cityFilter} onValueChange={setCityFilter}>
+                      <SelectTrigger className="w-full md:w-[220px] rounded-xl border-border/40 font-bold text-xs uppercase h-11">
+                        <SelectValue placeholder="Todas as Cidades" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-border/40">
+                        <SelectItem value="all" className="font-bold text-xs uppercase">Todas as Cidades</SelectItem>
+                        {availableCities.map(city => (
+                          <SelectItem key={city} value={city} className="font-bold text-xs uppercase">{city}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardHeader>
@@ -331,14 +364,16 @@ export default function AdminDashboard() {
                       <TableRow className="border-none">
                         <TableHead className="font-black text-[10px] uppercase p-6">ID</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">Cliente</TableHead>
-                        <TableHead className="font-black text-[10px] uppercase p-6">Itens</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6">Cidade</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-right">Valor</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Status</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders?.map((order) => (
+                      {filteredOrders.length === 0 ? (
+                        <TableRow><TableCell colSpan={6} className="p-10 text-center font-bold text-muted-foreground">Nenhum pedido encontrado para este filtro.</TableCell></TableRow>
+                      ) : filteredOrders.map((order) => (
                         <TableRow key={order.id} className="border-border/40 hover:bg-muted/10">
                           <TableCell className="p-6 font-black text-xs">{order.id}</TableCell>
                           <TableCell className="p-6">
@@ -348,7 +383,9 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="p-6">
-                            <span className="text-[10px] font-bold bg-muted p-1.5 px-3 rounded-full">{order.items.length} Itens</span>
+                            <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase tracking-widest px-3">
+                              {order.address?.city || "S/ INF"}
+                            </Badge>
                           </TableCell>
                           <TableCell className="p-6 text-right font-black text-xs text-primary">{formatCurrency(order.total)}</TableCell>
                           <TableCell className="p-6 text-center">{getStatusBadge(order.status)}</TableCell>
