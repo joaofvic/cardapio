@@ -18,7 +18,7 @@ import {
   ChevronRight,
   Filter,
   MoreVertical,
-  Calendar,
+  Calendar as CalendarIcon,
   Wallet,
   MapPin,
   Sparkles,
@@ -79,6 +79,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -90,7 +96,7 @@ import { collection, query, orderBy, limit, doc, updateDoc, setDoc, deleteDoc, a
 import { Order, Meal } from "@/app/types/meal";
 import { MEALS } from "@/app/data/meals";
 import { UserProfile } from "@/app/page";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -139,6 +145,7 @@ const DEFAULT_CATEGORIES = [
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [cityFilter, setCityFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [mealCategoryFilter, setMealCategoryFilter] = useState("all");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [isCatalogMode, setIsCatalogMode] = useState(false);
@@ -220,9 +227,21 @@ export default function AdminDashboard() {
 
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
-    if (cityFilter === "all") return orders;
-    return orders.filter(o => o.address?.city === cityFilter);
-  }, [orders, cityFilter]);
+    let result = orders;
+    
+    if (cityFilter !== "all") {
+      result = result.filter(o => o.address?.city === cityFilter);
+    }
+    
+    if (selectedDate) {
+      result = result.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return isSameDay(orderDate, selectedDate);
+      });
+    }
+    
+    return result;
+  }, [orders, cityFilter, selectedDate]);
 
   const filteredMealsForCatalog = useMemo(() => {
     if (!meals) return [];
@@ -231,10 +250,15 @@ export default function AdminDashboard() {
   }, [meals, mealCategoryFilter]);
 
   const stats = useMemo(() => {
-    const revenue = orders?.reduce((acc, order) => acc + order.total, 0) || 0;
-    const active = orders?.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length || 0;
-    const pendingLeadsCount = leads?.filter(l => l.status === 'pending').length || 0;
-    const totalOrders = orders?.length || 0;
+    const revenue = filteredOrders?.reduce((acc, order) => acc + order.total, 0) || 0;
+    const active = filteredOrders?.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length || 0;
+    
+    const leadsForDay = selectedDate 
+      ? leads?.filter(l => isSameDay(new Date(l.createdAt), selectedDate))
+      : leads;
+    
+    const pendingLeadsCount = leadsForDay?.filter(l => l.status === 'pending').length || 0;
+    const totalOrders = filteredOrders?.length || 0;
     
     return {
       totalSales: totalOrders,
@@ -243,7 +267,7 @@ export default function AdminDashboard() {
       revenue,
       pendingLeads: pendingLeadsCount
     };
-  }, [orders, leads]);
+  }, [filteredOrders, leads, selectedDate]);
 
   const handleUpdateStatus = (orderId: string, newStatus: string) => {
     if (!firestore) return;
@@ -900,9 +924,24 @@ export default function AdminDashboard() {
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="rounded-2xl h-12 px-6 border-none shadow-sm bg-white font-black text-xs uppercase">
-            <Calendar size={16} className="mr-2" /> {format(new Date(), "dd MMM", { locale: ptBR })}
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="rounded-2xl h-12 px-6 border-none shadow-sm bg-white font-black text-xs uppercase">
+                <CalendarIcon size={16} className="mr-2" /> 
+                {selectedDate ? format(selectedDate, "dd MMM", { locale: ptBR }) : "Selecionar Data"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-3xl" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+
           <div className="bg-primary text-white p-3 rounded-2xl shadow-xl shadow-primary/20">
             <LayoutDashboard size={24} />
           </div>
@@ -912,24 +951,24 @@ export default function AdminDashboard() {
       <main>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <StatCard 
-            title="Receita Total" 
+            title="Receita do Dia" 
             value={formatCurrency(stats.revenue)} 
             icon={Wallet} 
-            trend="+12% que ontem" 
+            trend="Relativo à data filtrada" 
             color="primary"
           />
           <StatCard 
-            title="Pedidos Totais" 
+            title="Pedidos do Dia" 
             value={stats.orderCount.toString()} 
             icon={ShoppingBag} 
-            trend="+5 novos hoje" 
+            trend={`${stats.orderCount} no total`} 
             color="secondary"
           />
           <StatCard 
             title="Pedidos Ativos" 
             value={stats.activeOrders.toString()} 
             icon={Clock} 
-            trend="Urgência: Média" 
+            trend="Status: Pendente/Rota" 
             color="amber"
           />
           <StatCard 
@@ -1062,9 +1101,9 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orders?.length === 0 ? (
-                          <TableRow><TableCell colSpan={5} className="p-10 text-center font-bold text-muted-foreground">Sem pedidos ainda...</TableCell></TableRow>
-                        ) : orders?.slice(0, 5).map((order) => (
+                        {filteredOrders?.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="p-10 text-center font-bold text-muted-foreground">Sem pedidos para esta data...</TableCell></TableRow>
+                        ) : filteredOrders?.slice(0, 5).map((order) => (
                           <TableRow key={order.id} className="border-border/40 hover:bg-muted/20 transition-colors">
                             <TableCell className="p-6 font-black text-xs text-primary">{order.id}</TableCell>
                             <TableCell className="p-6">
@@ -1100,8 +1139,8 @@ export default function AdminDashboard() {
                     />
                     <ActivityItem 
                       title="Novos Pedidos" 
-                      subtitle={`${orders?.length || 0} total acumulado`} 
-                      time="Hoje" 
+                      subtitle={`${filteredOrders?.length || 0} na data selecionada`} 
+                      time="Filtro ativo" 
                       status="success" 
                     />
                   </div>
