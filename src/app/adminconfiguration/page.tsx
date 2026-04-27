@@ -44,7 +44,10 @@ import {
   Save,
   Archive,
   RefreshCcw,
-  ChefHat
+  ChefHat,
+  Dna,
+  Wheat,
+  Salad
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -137,9 +140,10 @@ const ALL_SERVICED_CITIES = [
 
 const DEFAULT_CATEGORIES = [
   { id: 'Chicken', label: 'Frango' },
-  { id: 'Beef', label: 'Carne' },
-  { id: 'Fish', label: 'Peixe' },
-  { id: 'Veggie', label: 'Legumes' },
+  { id: 'Beef', label: 'Carne Bovina' },
+  { id: 'Fish', label: 'Outros' },
+  { id: 'Carbs', label: 'Carboidratos' },
+  { id: 'Veggie', label: 'Legumes e Vegetais' },
   { id: 'Combo', label: 'Combo' }
 ];
 
@@ -148,6 +152,7 @@ export default function AdminDashboard() {
   const [cityFilter, setCityFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [mealCategoryFilter, setMealCategoryFilter] = useState("all");
+  const [comboCategoryFilter, setComboCategoryFilter] = useState("all");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [isCatalogMode, setIsCatalogMode] = useState(false);
   const [isComboMode, setIsComboMode] = useState(false);
@@ -250,6 +255,15 @@ export default function AdminDashboard() {
     if (mealCategoryFilter === "all") return meals;
     return meals.filter(m => m.category === mealCategoryFilter);
   }, [meals, mealCategoryFilter]);
+
+  const filteredMealsForCombo = useMemo(() => {
+    if (!meals) return [];
+    let result = meals.filter(m => m.category !== 'Combo');
+    if (comboCategoryFilter !== "all") {
+      result = result.filter(m => m.category === comboCategoryFilter);
+    }
+    return result;
+  }, [meals, comboCategoryFilter]);
 
   const stats = useMemo(() => {
     const revenue = filteredOrders?.reduce((acc, order) => acc + order.total, 0) || 0;
@@ -446,55 +460,98 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-8">
-          <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
-            <CardHeader className="p-8">
-              <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
-                <ChefHat className="text-primary" size={24} /> Itens Disponíveis para Combo
-              </CardTitle>
-              <CardDescription>Ative os pratos que o cliente pode escolher ao montar seu kit personalizado.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-0">
-              <div className="rounded-3xl border border-border/40 overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow className="border-none">
-                      <TableHead className="font-black text-[10px] uppercase p-6">Prato</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase p-6 text-center">Liberado p/ Combo?</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {meals?.filter(m => m.category !== 'Combo').length === 0 ? (
-                      <TableRow><TableCell colSpan={3} className="p-10 text-center font-bold text-muted-foreground">Carregando pratos...</TableCell></TableRow>
-                    ) : meals?.filter(m => m.category !== 'Combo').map((meal) => (
-                      <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
-                        <TableCell className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="relative h-10 w-10 rounded-lg overflow-hidden shrink-0 border border-border/40">
-                              <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
-                            </div>
-                            <span className="font-black text-xs uppercase">{meal.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-6">
-                          <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase px-3">
-                            {meal.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-6 text-center">
-                          <Switch 
-                            checked={meal.isAvailableForCombo !== false} 
-                            onCheckedChange={() => handleToggleComboAvailability(meal)}
-                          />
-                        </TableCell>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+           <div className="lg:col-span-1">
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden h-fit sticky top-6">
+              <CardHeader className="p-8 pb-4">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Filter className="text-primary" size={20} /> Filtrar por Tipo
+                </CardTitle>
+                <CardDescription>Organize a lista de ingredientes</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0 space-y-3">
+                <button 
+                  onClick={() => setComboCategoryFilter("all")}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left",
+                    comboCategoryFilter === "all" ? "bg-primary text-white border-primary" : "bg-muted/20 border-border/40 hover:bg-muted/40"
+                  )}
+                >
+                  <Layers size={14} />
+                  <span className="text-xs font-black uppercase">Todos os Itens</span>
+                </button>
+                {currentCategories.filter((c: any) => c.id !== 'Combo').map((cat: any) => (
+                  <button 
+                    key={cat.id}
+                    onClick={() => setComboCategoryFilter(cat.id || cat.label)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left",
+                      comboCategoryFilter === (cat.id || cat.label) ? "bg-primary text-white border-primary" : "bg-muted/20 border-border/40 hover:bg-muted/40"
+                    )}
+                  >
+                    {cat.id === 'Chicken' && <ChefHat size={14} />}
+                    {cat.id === 'Beef' && <Dna size={14} />}
+                    {cat.id === 'Carbs' && <Wheat size={14} />}
+                    {cat.id === 'Veggie' && <Salad size={14} />}
+                    {cat.id === 'Fish' && <Tag size={14} />}
+                    <span className="text-xs font-black uppercase">{cat.label}</span>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-3">
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+              <CardHeader className="p-8">
+                <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <ChefHat className="text-primary" size={24} /> 
+                  {comboCategoryFilter === 'all' ? 'Itens Disponíveis para Combo' : `Itens: ${comboCategoryFilter}`}
+                </CardTitle>
+                <CardDescription>Ative os ingredientes que o cliente pode escolher ao montar seu kit personalizado.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0">
+                <div className="rounded-3xl border border-border/40 overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow className="border-none">
+                        <TableHead className="font-black text-[10px] uppercase p-6">Prato / Ingrediente</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Liberado p/ Combo?</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredMealsForCombo.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="p-10 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum item encontrado.</TableCell></TableRow>
+                      ) : filteredMealsForCombo.map((meal) => (
+                        <TableRow key={meal.id} className="border-border/40 hover:bg-muted/10">
+                          <TableCell className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className="relative h-10 w-10 rounded-lg overflow-hidden shrink-0 border border-border/40">
+                                <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" />
+                              </div>
+                              <span className="font-black text-xs uppercase">{meal.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-6">
+                            <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase px-3">
+                              {currentCategories.find((c: any) => c.id === meal.category)?.label || meal.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="p-6 text-center">
+                            <Switch 
+                              checked={meal.isAvailableForCombo !== false} 
+                              onCheckedChange={() => handleToggleComboAvailability(meal)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -590,7 +647,7 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="p-6">
                             <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black text-[9px] uppercase px-3">
-                              {meal.category}
+                              {currentCategories.find((c: any) => c.id === meal.category)?.label || meal.category}
                             </Badge>
                           </TableCell>
                           <TableCell className="p-6 text-right font-black text-xs">

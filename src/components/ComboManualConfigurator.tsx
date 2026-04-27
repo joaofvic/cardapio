@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Meal } from "@/app/types/meal";
-import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save, User, Users } from "lucide-react";
+import { Plus, Minus, CheckCircle2, Utensils, ChevronRight, ChevronLeft, ShoppingBag, Scale, Save, User, Users, ChefHat, Dna, Wheat, Salad, Tag } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { UserProfile } from "@/app/page";
@@ -38,7 +38,7 @@ export function ComboManualConfigurator({ onAddToCart, availableMeals, initialDa
   const [peopleNames, setPeopleNames] = useState<string[]>([]);
   const [marmitas, setMarmitas] = useState<Meal[][]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<'All' | 'Chicken' | 'Beef' | 'Fish' | 'Veggie'>('All');
+  const [activeCategory, setActiveCategory] = useState<string>('All');
 
   useEffect(() => {
     if (initialData?.configuration) {
@@ -84,7 +84,6 @@ export function ComboManualConfigurator({ onAddToCart, availableMeals, initialDa
   };
 
   const filteredMeals = useMemo(() => {
-    // Filtramos apenas pratos que não são categoria Combo e que estão marcados como disponíveis para combo
     const pool = availableMeals.filter(m => m.category !== 'Combo' && m.isAvailableForCombo !== false);
     if (activeCategory === 'All') return pool;
     return pool.filter(m => m.category === activeCategory);
@@ -145,11 +144,12 @@ export function ComboManualConfigurator({ onAddToCart, availableMeals, initialDa
   };
 
   const categories = [
-    { id: 'All', label: 'Todos' },
-    { id: 'Chicken', label: 'Frango' },
-    { id: 'Beef', label: 'Carne' },
-    { id: 'Fish', label: 'Peixe' },
-    { id: 'Veggie', label: 'Legumes' }
+    { id: 'All', label: 'Todos', icon: Layers },
+    { id: 'Chicken', label: 'Frango', icon: ChefHat },
+    { id: 'Beef', label: 'Carne Bovina', icon: Dna },
+    { id: 'Fish', label: 'Outros', icon: Tag },
+    { id: 'Carbs', label: 'Carboidratos', icon: Wheat },
+    { id: 'Veggie', label: 'Legumes e Veg.', icon: Salad }
   ];
 
   const totalSelected = marmitas.flat().length;
@@ -355,9 +355,13 @@ export function ComboManualConfigurator({ onAddToCart, availableMeals, initialDa
               {categories.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => setActiveCategory(cat.id as any)}
-                  className={cn("px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap", activeCategory === cat.id ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80")}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap flex items-center gap-2", 
+                    activeCategory === cat.id ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
                 >
+                  <cat.icon size={12} />
                   {cat.label}
                 </button>
               ))}
@@ -369,7 +373,7 @@ export function ComboManualConfigurator({ onAddToCart, availableMeals, initialDa
                 <div className="relative h-24 w-full rounded-2xl overflow-hidden mb-3">
                   <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                 </div>
-                <h4 className="font-black text-xs leading-tight mb-2 line-clamp-1">{meal.name}</h4>
+                <h4 className="font-black text-xs leading-tight mb-2 line-clamp-2">{meal.name}</h4>
                 <Button size="sm" className="h-8 px-4 rounded-xl bg-primary text-white text-[9px] font-black uppercase mt-auto" onClick={() => handleAddItem(meal)} disabled={marmitas[activeIndex]?.length >= ITEMS_PER_MARMITA}>Escolher</Button>
               </div>
             ))}
