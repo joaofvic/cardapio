@@ -14,6 +14,7 @@ import { IdentificationDialog } from "@/components/IdentificationDialog";
 import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 import { ComboManualConfigurator } from "@/components/ComboManualConfigurator";
 import { ComboAIConfigurator } from "@/components/ComboAIConfigurator";
+import { RecommendationSection } from "@/components/RecommendationSection";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export default function HarvestBitesApp() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>('São Miguel - RN');
   const [editingCombo, setEditingCombo] = useState<Meal | null>(null);
+  const [browsingHistory, setBrowsingHistory] = useState<string[]>([]);
   
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -83,6 +85,10 @@ export default function HarvestBitesApp() {
     } else {
       setIsCityDialogOpen(true);
     }
+    const savedHistory = localStorage.getItem('harvest_bites_history');
+    if (savedHistory) {
+      setBrowsingHistory(JSON.parse(savedHistory));
+    }
   }, []);
 
   const categories = useMemo(() => {
@@ -99,14 +105,11 @@ export default function HarvestBitesApp() {
   const filteredMeals = useMemo(() => {
     if (!meals) return [];
     return meals.filter(meal => {
-      // Ocultar produtos arquivados
       if (meal.isArchived) return false;
-
       const activeId = activeCategory;
       const matchesCategory = activeId === 'Todos' || 
                              (activeId === 'Combos' && meal.category === 'Combo') ||
                              meal.category === activeId;
-
       const matchesSearch = meal.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            meal.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
@@ -154,6 +157,12 @@ export default function HarvestBitesApp() {
 
   const handleOpenDetails = (meal: Meal) => {
     setSelectedMeal(meal);
+    // Atualiza histórico para recomendações de IA
+    setBrowsingHistory(prev => {
+      const newHistory = [meal.name, ...prev.filter(name => name !== meal.name)].slice(0, 5);
+      localStorage.setItem('harvest_bites_history', JSON.stringify(newHistory));
+      return newHistory;
+    });
   };
 
   const handleTabChange = (tabId: string) => {
@@ -288,26 +297,38 @@ export default function HarvestBitesApp() {
 
         <main className="mt-6 min-h-[60vh]">
           {viewMode === 'menu' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300 ease-out">
-              {loadingMeals ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-20">
-                  <Loader2 className="animate-spin text-primary mb-4" size={40} />
-                  <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Carregando cardápio...</p>
+            <>
+              {browsingHistory.length > 0 && searchQuery === "" && activeCategory === "Todos" && (
+                <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+                  <RecommendationSection 
+                    browsingHistory={browsingHistory} 
+                    onAddToCart={(m) => handleAddToCart(m, 1)}
+                    onOpenDetails={handleOpenDetails}
+                  />
                 </div>
-              ) : filteredMeals.length === 0 ? (
-                <div className="col-span-full text-center py-20">
-                  <Utensils className="mx-auto text-muted-foreground/30 mb-4" size={64} />
-                  <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Nenhum prato disponível no momento.</p>
-                </div>
-              ) : filteredMeals.map((meal) => (
-                <MealCard 
-                  key={meal.id} 
-                  meal={meal} 
-                  onAddToCart={(m) => handleAddToCart(m, 1)}
-                  onOpenDetails={handleOpenDetails}
-                />
-              ))}
-            </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300 ease-out">
+                {loadingMeals ? (
+                  <div className="col-span-full flex flex-col items-center justify-center py-20">
+                    <Loader2 className="animate-spin text-primary mb-4" size={40} />
+                    <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Carregando cardápio...</p>
+                  </div>
+                ) : filteredMeals.length === 0 ? (
+                  <div className="col-span-full text-center py-20">
+                    <Utensils className="mx-auto text-muted-foreground/30 mb-4" size={64} />
+                    <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Nenhum prato disponível no momento.</p>
+                  </div>
+                ) : filteredMeals.map((meal) => (
+                  <MealCard 
+                    key={meal.id} 
+                    meal={meal} 
+                    onAddToCart={(m) => handleAddToCart(m, 1)}
+                    onOpenDetails={handleOpenDetails}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {viewMode === 'combo-type' && (
