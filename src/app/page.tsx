@@ -166,7 +166,7 @@ export default function HarvestBitesApp() {
       />
       
       <header className="flex justify-between items-start mb-8">
-        <div className="animate-in fade-in slide-in-from-left duration-300 ease-out">
+        <div className="animate-in fade-in slide-in-from-left duration-500 ease-out">
           <h1 className="text-primary font-black text-2xl tracking-tighter leading-none">HARVEST BITES</h1>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
             Refeições Saudáveis & Prontas
@@ -175,7 +175,7 @@ export default function HarvestBitesApp() {
         <div className="flex flex-col items-end gap-2">
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:-rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-300 ease-out"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:-rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-500 ease-out"
           >
             {userFirstName ? (
               <div className="flex items-center gap-2 px-1">
@@ -194,7 +194,7 @@ export default function HarvestBitesApp() {
 
           <button 
             onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-300 ease-out cursor-pointer"
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-500 fill-mode-both ease-out cursor-pointer"
           >
             <MapPin size={14} className="text-primary" />
             <div className="text-right">
