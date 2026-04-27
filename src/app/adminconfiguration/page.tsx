@@ -49,7 +49,10 @@ import {
   Wheat,
   Salad,
   Store,
-  CalendarClock
+  CalendarClock,
+  CircleCheck,
+  CircleX,
+  User as UserIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,6 +135,16 @@ interface SiteSettings {
   openingHours: string;
 }
 
+interface Coupon {
+  id: string;
+  code: string;
+  discountPercent: number;
+  isActive: boolean;
+  description: string;
+  owner: string;
+  createdAt: string;
+}
+
 const ALL_SERVICED_CITIES = [
   "São Miguel - RN",
   "Coronel João Pessoa - RN",
@@ -165,8 +178,12 @@ export default function AdminDashboard() {
   // Dialog States
   const [isMealDialogOpen, setIsMealDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isCouponListOpen, setIsCouponListOpen] = useState(false);
+  const [isCouponEditorOpen, setIsCouponEditorOpen] = useState(false);
+  
   const [editingMeal, setEditingMeal] = useState<Partial<Meal> | null>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon> | null>(null);
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -196,6 +213,11 @@ export default function AdminDashboard() {
     return query(collection(firestore, "categories"), orderBy("label", "asc"));
   }, [firestore]);
 
+  const couponsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "coupons"), orderBy("createdAt", "desc"));
+  }, [firestore]);
+
   const settingsDocRef = useMemo(() => {
     if (!firestore) return null;
     return doc(firestore, "settings", "global");
@@ -206,6 +228,7 @@ export default function AdminDashboard() {
   const { data: leads } = useCollection<MealPlanLead>(leadsQuery as any);
   const { data: meals } = useCollection<Meal>(mealsQuery as any);
   const { data: categoriesData } = useCollection<any>(categoriesQuery as any);
+  const { data: coupons } = useCollection<Coupon>(couponsQuery as any);
   const { data: settingsData } = useDoc<SiteSettings>(settingsDocRef as any);
 
   const settings = settingsData || {
@@ -427,6 +450,41 @@ export default function AdminDashboard() {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryRef.path, operation: 'delete' }));
     });
     toast({ title: "Categoria Removida", description: "A categoria foi excluída do menu." });
+  };
+
+  const handleSaveCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firestore || !editingCoupon) return;
+
+    const couponData: Coupon = {
+      ...editingCoupon,
+      id: editingCoupon.id || doc(collection(firestore, "coupons")).id,
+      code: (editingCoupon.code || "").toUpperCase(),
+      discountPercent: editingCoupon.discountPercent || 0,
+      isActive: editingCoupon.isActive !== undefined ? editingCoupon.isActive : true,
+      description: editingCoupon.description || "",
+      owner: editingCoupon.owner || "",
+      createdAt: editingCoupon.createdAt || new Date().toISOString()
+    } as Coupon;
+
+    const couponRef = doc(firestore, "coupons", couponData.id);
+    setDoc(couponRef, couponData, { merge: true })
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: couponRef.path, operation: 'write', requestResourceData: couponData }));
+      });
+
+    setIsCouponEditorOpen(false);
+    setEditingCoupon(null);
+    toast({ title: "Cupom Salvo", description: `O cupom ${couponData.code} foi atualizado.` });
+  };
+
+  const handleDeleteCoupon = (couponId: string) => {
+    if (!firestore) return;
+    const couponRef = doc(firestore, "coupons", couponId);
+    deleteDoc(couponRef).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: couponRef.path, operation: 'delete' }));
+    });
+    toast({ title: "Cupom Excluído", description: "O cupom foi removido permanentemente." });
   };
 
   const toggleOrderExpansion = (orderId: string) => {
@@ -1170,27 +1228,45 @@ export default function AdminDashboard() {
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
                 <div className="relative z-10">
                   <Ticket className="mb-4" size={32} />
-                  <h3 className="text-2xl font-black tracking-tighter mb-2 leading-none">CUPOM ATIVO</h3>
-                  <div className="space-y-4 mb-6">
-                    <div>
-                      <label className="text-[9px] font-black uppercase tracking-widest text-white/60">Código Atual</label>
+                  <h3 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">Gestão de Cupons</h3>
+                  
+                  <div className="space-y-4">
+                    <Button 
+                      className="w-full h-14 rounded-2xl bg-white text-primary font-black uppercase text-xs hover:bg-white/90 shadow-lg"
+                      onClick={() => setIsCouponListOpen(true)}
+                    >
+                      LISTAR CUPONS <ChevronRight size={16} className="ml-2" />
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full h-14 rounded-2xl bg-white/10 border-white/20 text-white font-black uppercase text-xs hover:bg-white/20"
+                      onClick={() => {
+                        setEditingCoupon({ isActive: true });
+                        setIsCouponEditorOpen(true);
+                      }}
+                    >
+                      NOVO CUPOM <Plus size={16} className="ml-2" />
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-8 pt-6 border-t border-white/10">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-white/60">Cupom Operacional Rápido</label>
+                    <div className="space-y-3 mt-3">
                       <Input 
                         value={settings.activeCouponCode}
                         onChange={(e) => handleSaveSettings('activeCouponCode', e.target.value.toUpperCase())}
-                        className="bg-white/10 border-white/20 text-white font-black uppercase placeholder:text-white/30 h-10 mt-1"
+                        className="bg-white/10 border-white/20 text-white font-black uppercase placeholder:text-white/30 h-10"
+                        placeholder="CÓDIGO"
                       />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-black uppercase tracking-widest text-white/60">Desconto (%)</label>
                       <Input 
                         type="number"
                         value={settings.couponDiscountPercent}
                         onChange={(e) => handleSaveSettings('couponDiscountPercent', Number(e.target.value))}
-                        className="bg-white/10 border-white/20 text-white font-black h-10 mt-1"
+                        className="bg-white/10 border-white/20 text-white font-black h-10"
+                        placeholder="%"
                       />
                     </div>
                   </div>
-                  <Badge className="w-full bg-white text-primary justify-center h-10 font-black uppercase text-xs">Cupom Operacional</Badge>
                 </div>
               </Card>
 
@@ -1211,6 +1287,152 @@ export default function AdminDashboard() {
               </Card>
           </div>
         </div>
+
+        {/* Coupon List Dialog */}
+        <Dialog open={isCouponListOpen} onOpenChange={setIsCouponListOpen}>
+          <DialogContent className="sm:max-w-[700px] rounded-[2rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+            <div className="bg-primary p-8 text-white">
+              <DialogTitle className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
+                <Ticket size={32} /> Lista de Cupons
+              </DialogTitle>
+              <p className="text-white/70 font-bold uppercase text-[10px] tracking-widest mt-2">Gerencie todos os descontos ativos e inativos</p>
+            </div>
+            <div className="p-8">
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-4">
+                  {coupons?.length === 0 ? (
+                    <div className="p-20 text-center font-bold text-muted-foreground uppercase text-xs">Nenhum cupom cadastrado.</div>
+                  ) : coupons?.map((coupon) => (
+                    <div key={coupon.id} className={cn(
+                      "p-5 rounded-3xl border transition-all flex items-center justify-between group",
+                      coupon.isActive ? "bg-white border-border/40 hover:border-primary/40 shadow-sm" : "bg-muted/30 border-transparent opacity-60"
+                    )}>
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "p-3 rounded-2xl",
+                          coupon.isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        )}>
+                          <Ticket size={24} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-black text-sm uppercase tracking-tight">{coupon.code}</h4>
+                            <Badge className={cn("rounded-lg border-none font-black text-[9px] uppercase", coupon.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                              {coupon.isActive ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </div>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                            {coupon.discountPercent}% OFF • {coupon.owner || "Livre"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary"
+                          onClick={() => {
+                            setEditingCoupon(coupon);
+                            setIsCouponEditorOpen(true);
+                          }}
+                         >
+                           <Pencil size={18} />
+                         </Button>
+                         <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-10 w-10 rounded-xl hover:bg-red-50 hover:text-white"
+                          onClick={() => handleDeleteCoupon(coupon.id)}
+                         >
+                           <Trash2 size={18} />
+                         </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <Button 
+                  className="rounded-xl h-12 px-8 font-black uppercase text-xs"
+                  onClick={() => setIsCouponListOpen(false)}
+                >
+                  Fechar Lista
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Coupon Editor Dialog */}
+        <Dialog open={isCouponEditorOpen} onOpenChange={setIsCouponEditorOpen}>
+          <DialogContent className="sm:max-w-[450px] rounded-[2rem] p-8 bg-white border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                {editingCoupon?.id ? "Editar Cupom" : "Novo Cupom"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveCoupon} className="space-y-5 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Código do Cupom</Label>
+                <Input 
+                  value={editingCoupon?.code || ""} 
+                  onChange={(e) => setEditingCoupon(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                  required
+                  placeholder="EX: HARVEST50"
+                  className="rounded-xl bg-muted/30 border-none font-bold h-12 uppercase"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Desconto (%)</Label>
+                  <Input 
+                    type="number"
+                    value={editingCoupon?.discountPercent || ""} 
+                    onChange={(e) => setEditingCoupon(prev => ({ ...prev, discountPercent: Number(e.target.value) }))}
+                    required
+                    className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 pt-6">
+                  <div className="flex items-center gap-2">
+                    <Switch 
+                      checked={editingCoupon?.isActive !== false} 
+                      onCheckedChange={(val) => setEditingCoupon(prev => ({ ...prev, isActive: val }))}
+                    />
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Ativo</Label>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Descrição / Nome do Cupom</Label>
+                <Input 
+                  value={editingCoupon?.description || ""} 
+                  onChange={(e) => setEditingCoupon(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Ex: Cupom de Boas-vindas"
+                  className="rounded-xl bg-muted/30 border-none font-bold h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">A quem pertence (Proprietário)</Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input 
+                    value={editingCoupon?.owner || ""} 
+                    onChange={(e) => setEditingCoupon(prev => ({ ...prev, owner: e.target.value }))}
+                    placeholder="Ex: Influenciador João"
+                    className="rounded-xl bg-muted/30 border-none font-bold h-12 pl-11"
+                  />
+                </div>
+              </div>
+              <DialogFooter className="pt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsCouponEditorOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
+                <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest bg-primary text-white hover:bg-primary/90">
+                  <Save size={16} className="mr-2" /> Salvar Cupom
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

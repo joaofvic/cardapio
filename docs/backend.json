@@ -115,6 +115,20 @@
         "id": { "type": "string" }
       },
       "required": ["label", "id"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "A discount coupon.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "isActive": { "type": "boolean", "default": true },
+        "description": { "type": "string", "description": "Nome ou descrição do cupom." },
+        "owner": { "type": "string", "description": "Nome da pessoa a quem o cupom pertence." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "discountPercent", "isActive"]
     }
   },
   "auth": {
@@ -144,6 +158,10 @@
     "/categories/{categoryId}": {
       "schema": "Category",
       "description": "Stores the product categories."
+    },
+    "/coupons/{couponId}": {
+      "schema": "Coupon",
+      "description": "Stores discount coupons."
     }
   }
 }
