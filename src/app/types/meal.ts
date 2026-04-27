@@ -14,6 +14,7 @@ export interface Meal {
   isGlutenFree?: boolean;
   isSugarFree?: boolean;
   isArchived?: boolean;
+  isAvailableForCombo?: boolean;
   configuration?: {
     marmitaCount: number;
     selectedSize: { label: string; price: number };

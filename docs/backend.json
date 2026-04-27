@@ -99,7 +99,8 @@
         "isDairyFree": { "type": "boolean" },
         "isGlutenFree": { "type": "boolean" },
         "isSugarFree": { "type": "boolean" },
-        "isArchived": { "type": "boolean", "default": false }
+        "isArchived": { "type": "boolean", "default": false },
+        "isAvailableForCombo": { "type": "boolean", "default": true }
       },
       "required": ["name", "category", "price"]
     },

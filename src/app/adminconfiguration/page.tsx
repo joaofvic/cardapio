@@ -42,7 +42,8 @@ import {
   Layers,
   Tag,
   Save,
-  Archive
+  Archive,
+  RefreshCcw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -206,7 +207,7 @@ export default function AdminDashboard() {
     if (firestore && meals && meals.length === 0) {
       MEALS.forEach(meal => {
         const mealRef = doc(firestore, "meals", meal.id);
-        setDoc(mealRef, meal);
+        setDoc(mealRef, { ...meal, isAvailableForCombo: meal.category !== 'Combo' });
       });
     }
     if (firestore && categoriesData && categoriesData.length === 0) {
@@ -315,6 +316,20 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleToggleComboAvailability = (meal: Meal) => {
+    if (!firestore) return;
+    const mealRef = doc(firestore, "meals", meal.id);
+    const newStatus = !meal.isAvailableForCombo;
+    updateDoc(mealRef, { isAvailableForCombo: newStatus })
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: mealRef.path, operation: 'update', requestResourceData: { isAvailableForCombo: newStatus } }));
+      });
+    toast({ 
+      title: newStatus ? "Habilitado no Combo" : "Removido do Combo", 
+      description: newStatus ? "O prato agora pode ser escolhido na montagem manual." : "O prato não aparecerá mais como opção de item para o combo." 
+    });
+  };
+
   const handleSaveMeal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firestore || !editingMeal) return;
@@ -324,7 +339,8 @@ export default function AdminDashboard() {
       id: editingMeal.id || doc(collection(firestore, "meals")).id,
       imageUrl: editingMeal.imageUrl || "https://picsum.photos/seed/harvest/400/300",
       rating: editingMeal.rating || 5.0,
-      isArchived: editingMeal.isArchived || false
+      isArchived: editingMeal.isArchived || false,
+      isAvailableForCombo: editingMeal.isAvailableForCombo !== undefined ? editingMeal.isAvailableForCombo : true
     };
 
     const mealRef = doc(firestore, "meals", mealData.id);
@@ -416,7 +432,7 @@ export default function AdminDashboard() {
             <Button 
               className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest"
               onClick={() => {
-                setEditingMeal({ category: 'Chicken', price: 32.90, protein: 30, carbs: 40, calories: 450, isArchived: false });
+                setEditingMeal({ category: 'Chicken', price: 32.90, protein: 30, carbs: 40, calories: 450, isArchived: false, isAvailableForCombo: true });
                 setIsMealDialogOpen(true);
               }}
             >
@@ -457,7 +473,7 @@ export default function AdminDashboard() {
                         <TableHead className="font-black text-[10px] uppercase p-6">Prato</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6">Categoria</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-right">Preço</TableHead>
-                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Nutrição</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">No Combo?</TableHead>
                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -486,10 +502,11 @@ export default function AdminDashboard() {
                             {formatCurrency(meal.price)}
                           </TableCell>
                           <TableCell className="p-6 text-center">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[9px] font-bold text-muted-foreground uppercase">{meal.calories} kcal</span>
-                              <span className="text-[9px] font-bold text-primary uppercase">{meal.protein}g Prot</span>
-                            </div>
+                            <Switch 
+                              checked={meal.isAvailableForCombo !== false} 
+                              onCheckedChange={() => handleToggleComboAvailability(meal)}
+                              className="scale-75"
+                            />
                           </TableCell>
                           <TableCell className="p-6 text-center">
                             <div className="flex justify-center gap-2">
@@ -673,6 +690,18 @@ export default function AdminDashboard() {
                   <Input type="number" value={editingMeal?.calories || ""} onChange={(e) => setEditingMeal(prev => ({ ...prev, calories: Number(e.target.value) }))} className="rounded-xl bg-muted/30 border-none font-bold h-10" />
                 </div>
               </div>
+              
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-border/20">
+                <div className="space-y-0.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Disponível no Combo?</Label>
+                  <p className="text-[9px] text-muted-foreground font-bold">Permite selecionar como item na montagem manual.</p>
+                </div>
+                <Switch 
+                  checked={editingMeal?.isAvailableForCombo !== false} 
+                  onCheckedChange={(val) => setEditingMeal(prev => ({ ...prev, isAvailableForCombo: val }))}
+                />
+              </div>
+
               <DialogFooter className="pt-6">
                 <Button type="button" variant="ghost" onClick={() => setIsMealDialogOpen(false)} className="rounded-xl font-black uppercase text-xs">Cancelar</Button>
                 <Button type="submit" className="rounded-xl h-12 px-8 font-black uppercase text-xs tracking-widest">

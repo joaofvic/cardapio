@@ -84,7 +84,8 @@ export function ComboManualConfigurator({ onAddToCart, availableMeals, initialDa
   };
 
   const filteredMeals = useMemo(() => {
-    const pool = availableMeals.filter(m => m.category !== 'Combo');
+    // Agora filtramos apenas pratos que NÃO são categoria Combo E que estão marcados como disponíveis para combo
+    const pool = availableMeals.filter(m => m.category !== 'Combo' && m.isAvailableForCombo !== false);
     if (activeCategory === 'All') return pool;
     return pool.filter(m => m.category === activeCategory);
   }, [availableMeals, activeCategory]);
