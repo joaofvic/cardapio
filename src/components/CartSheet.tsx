@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -45,7 +46,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -75,6 +76,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [needsChange, setNeedsChange] = useState(false);
   const [changeFor, setChangeFor] = useState("");
+  const [isFinalizing, setIsFinalizing] = useState(false);
   
   const scrollAreaTopRef = useRef<HTMLDivElement>(null);
 
@@ -240,8 +242,9 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   };
 
   const handleFinalize = async () => {
-    if (!firestore) return;
+    if (!firestore || isFinalizing) return;
 
+    setIsFinalizing(true);
     const cleanPhone = phone.replace(/\D/g, "");
     const userProfile: UserProfile = {
       name,
@@ -249,24 +252,72 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       address
     };
 
+    const orderId = `HB-${Date.now()}`;
+    const orderData = {
+      id: orderId,
+      userId: cleanPhone,
+      customerName: name,
+      items: items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        imageUrl: item.imageUrl
+      })),
+      subtotal,
+      deliveryFee,
+      total,
+      status: 'pending',
+      paymentMethod: selectedPayment,
+      createdAt: new Date().toISOString(),
+      address: isNotHome ? address : { ...address, street: "Localização GPS" }
+    };
+
     const userRef = doc(firestore, "users", cleanPhone);
-    setDoc(userRef, userProfile, { merge: true })
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: userRef.path,
-          operation: 'write',
-          requestResourceData: userProfile,
+    const orderRef = doc(firestore, "orders", orderId);
+
+    try {
+      // Salva usuário
+      setDoc(userRef, userProfile, { merge: true })
+        .catch(async (error) => {
+          const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'write',
+            requestResourceData: userProfile,
+          });
+          errorEmitter.emit('permission-error', permissionError);
         });
-        errorEmitter.emit('permission-error', permissionError);
+
+      // Salva pedido
+      setDoc(orderRef, orderData)
+        .catch(async (error) => {
+          const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: 'create',
+            requestResourceData: orderData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        });
+
+      onIdentify(userProfile);
+
+      toast({
+        title: "Pedido Recebido!",
+        description: "Estamos preparando suas delícias.",
       });
-
-    onIdentify(userProfile);
-
-    toast({
-      title: "Pedido Recebido!",
-      description: "Estamos preparando suas delícias.",
-    });
-    onClose();
+      
+      // Limpar carrinho e fechar (idealmente deveria ter um estado global ou callback aqui)
+      // window.location.reload(); 
+      onClose();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao Finalizar",
+        description: "Não conseguimos processar seu pedido agora.",
+      });
+    } finally {
+      setIsFinalizing(false);
+    }
   };
 
   const paymentMethods = [
@@ -634,7 +685,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
             <SheetFooter>
               {step === 'cart' ? (
                 <Button 
-                  disabled={!isFormValid} 
+                  disabled={!isFormValid || isFinalizing} 
                   onClick={handleNextStep} 
                   className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98] uppercase tracking-tighter"
                 >
@@ -642,11 +693,11 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
                 </Button>
               ) : (
                 <Button 
-                  disabled={!selectedPayment} 
+                  disabled={!selectedPayment || isFinalizing} 
                   onClick={handleFinalize} 
                   className="w-full h-16 rounded-full text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98] uppercase tracking-tighter"
                 >
-                  Finalizar Pedido
+                  {isFinalizing ? <Loader2 className="animate-spin" /> : "Finalizar Pedido"}
                 </Button>
               )}
             </SheetFooter>

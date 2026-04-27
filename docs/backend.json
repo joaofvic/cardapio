@@ -27,6 +27,28 @@
         }
       },
       "required": ["name", "phone"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer's meal order.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "preparing", "delivery", "completed", "cancelled"],
+          "default": "pending"
+        },
+        "paymentMethod": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "address": { "type": "object" }
+      },
+      "required": ["userId", "items", "total", "status", "createdAt"]
     }
   },
   "auth": {
@@ -36,6 +58,10 @@
     "/users/{phoneNumber}": {
       "schema": "UserProfile",
       "description": "Stores user profile information indexed by their phone number."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Stores customer orders."
     }
   }
 }
