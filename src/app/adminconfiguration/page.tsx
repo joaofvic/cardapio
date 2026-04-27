@@ -26,7 +26,13 @@ import {
   FileText,
   Eye,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Bell,
+  ToggleLeft,
+  ToggleRight,
+  Zap,
+  Truck,
+  Ticket
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { 
   Table, 
   TableBody, 
@@ -82,6 +89,7 @@ const ALL_SERVICED_CITIES = [
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [cityFilter, setCityFilter] = useState("all");
+  const [isSettingsMode, setIsSettingsMode] = useState(false);
   const firestore = useFirestore();
 
   const ordersQuery = useMemo(() => {
@@ -150,6 +158,115 @@ export default function AdminDashboard() {
   };
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+
+  if (isSettingsMode) {
+    return (
+      <div className="min-h-screen bg-muted/20 p-6 md:p-10 font-body animate-in fade-in slide-in-from-right duration-500">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+          <div>
+            <button 
+              onClick={() => setIsSettingsMode(false)}
+              className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-3 hover:translate-x-[-4px] transition-transform"
+            >
+              <ArrowLeft size={16} /> Voltar ao Painel
+            </button>
+            <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Configurações do Site</h1>
+            <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Gerencie as funções visíveis para o cliente</p>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+              <CardHeader className="p-8">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Zap className="text-primary" size={20} /> Funções e Visibilidade
+                </CardTitle>
+                <CardDescription>Ative ou desative recursos que os clientes podem acessar no site.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0 space-y-6">
+                <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/20 border border-border/40">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase">Análise de Plano Alimentar (IA)</h4>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Permite que clientes enviem fotos de suas dietas para orçamento.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/20 border border-border/40">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase">Cupons de Desconto</h4>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Habilita o campo de inserção de cupons na cesta de compras.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/20 border border-border/40">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase">Filtro de Categoria "Legumes"</h4>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Exibe ou oculta a categoria de refeições vegetarianas no menu.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+              <CardHeader className="p-8">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Truck className="text-primary" size={20} /> Logística e Prazos
+                </CardTitle>
+                <CardDescription>Configure avisos de entrega para cidades fora de São Miguel.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Data de Entrega (Rotas)</label>
+                    <Input defaultValue="18/12/2025" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Limite para Pedidos Semanais</label>
+                    <Input defaultValue="Quinta-feira" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                  </div>
+                </div>
+                <Button className="w-full h-12 rounded-xl bg-primary font-black uppercase text-xs tracking-widest">Salvar Alterações Logísticas</Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+             <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary p-10 text-white relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
+                <div className="relative z-10">
+                  <Ticket className="mb-4" size={32} />
+                  <h3 className="text-2xl font-black tracking-tighter mb-2 leading-none">CUPOM ATIVO</h3>
+                  <p className="text-white/60 font-bold uppercase text-[9px] tracking-widest mb-6">ADAS - 50% de Desconto</p>
+                  <Button variant="outline" className="w-full h-14 rounded-2xl bg-white/10 border-white/20 text-white font-black uppercase text-xs hover:bg-white/20">
+                    Alterar Cupom
+                  </Button>
+                </div>
+              </Card>
+
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                <h3 className="text-xl font-black uppercase tracking-tighter mb-6 flex items-center gap-3">
+                  <Bell className="text-primary" size={20} /> Notificações Admin
+                </h3>
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between">
+                     <span className="text-xs font-bold uppercase">Avisar Novos Pedidos</span>
+                     <Switch defaultChecked />
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-xs font-bold uppercase">Resumo de Vendas Diário</span>
+                     <Switch />
+                   </div>
+                </div>
+              </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/20 p-6 md:p-10 font-body">
@@ -255,7 +372,7 @@ export default function AdminDashboard() {
             </div>
             <Button 
               className="w-full h-14 rounded-2xl bg-muted text-foreground hover:bg-muted/90 font-black uppercase text-xs tracking-widest transition-all"
-              onClick={() => setActiveTab("settings")}
+              onClick={() => setIsSettingsMode(true)}
             >
               GERENCIAR FUNÇÕES <ChevronRight size={16} className="ml-2" />
             </Button>
@@ -275,9 +392,6 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="users" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
               Clientes
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              Admin
             </TabsTrigger>
           </TabsList>
 
@@ -351,7 +465,7 @@ export default function AdminDashboard() {
                   </div>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl shadow-black/5 bg-primary p-10 text-white relative overflow-hidden">
+                <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary p-10 text-white relative overflow-hidden">
                   <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
                   <div className="relative z-10">
                     <h3 className="text-2xl font-black tracking-tighter mb-2 leading-none">META SEMANAL</h3>
@@ -555,26 +669,6 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white">
-              <CardHeader className="p-8">
-                <CardTitle className="text-2xl font-black uppercase tracking-tighter">Funções de Admin</CardTitle>
-                <CardDescription className="font-medium">Configure as funções e visibilidade de recursos para os clientes.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   <div className="p-8 rounded-[2rem] bg-muted/30 border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center text-center">
-                     <Settings className="text-muted-foreground mb-4" size={32} />
-                     <h4 className="font-black text-sm uppercase mb-2">Novas Funções em Breve</h4>
-                     <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase">
-                       Aqui você poderá configurar cupons, prazos de entrega e visibilidade de categorias.
-                     </p>
-                   </div>
                 </div>
               </CardContent>
             </Card>
