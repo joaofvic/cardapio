@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -175,7 +174,7 @@ export default function HarvestBitesApp() {
         <div className="flex flex-col items-end gap-2">
           <button 
             onClick={() => setIsProfileOpen(true)}
-            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-90 active:-rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-500 ease-in-out"
+            className="bg-white p-2.5 min-w-[44px] rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:-rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in slide-in-from-right duration-500 ease-in-out"
           >
             {userFirstName ? (
               <div className="flex items-center gap-2 px-1">
@@ -193,9 +192,8 @@ export default function HarvestBitesApp() {
           </button>
 
           <button 
-            key={selectedCity}
             onClick={() => setIsCityDialogOpen(true)}
-            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-90 active:rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-500 ease-in-out"
+            className="bg-white px-3 py-2 rounded-2xl shadow-sm text-primary hover:bg-muted transition-all active:scale-95 active:rotate-1 flex items-center gap-2 border border-border/50 animate-in fade-in zoom-in duration-500 ease-in-out cursor-pointer"
           >
             <MapPin size={14} className="text-primary" />
             <div className="text-right">
