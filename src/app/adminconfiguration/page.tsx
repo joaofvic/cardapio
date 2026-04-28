@@ -295,8 +295,8 @@ export default function AdminDashboard() {
     isDeliveryOpen: true,
     activeCouponCode: "ADAS",
     couponDiscountPercent: 50,
-    nextDeliveryDate: "18/12/2025",
-    orderDeadline: "Quinta-feira",
+    nextDeliveryDate: new Date().toISOString(),
+    orderDeadline: new Date().toISOString(),
     openingHours: "Segunda a Sábado, das 10h às 22h",
     detailedSchedule: DEFAULT_SCHEDULE,
     specialDates: []
@@ -478,6 +478,15 @@ export default function AdminDashboard() {
     return <Badge className={cn("border-none px-3 py-1 text-[10px] font-black uppercase", color)}>{label}</Badge>;
   };
 
+  const formatDateValue = (dateStr: string) => {
+    try {
+      const d = parseISO(dateStr);
+      return isNaN(d.getTime()) ? dateStr : format(d, "PPP", { locale: ptBR });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted/20 p-6 md:p-10 font-body">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
@@ -518,7 +527,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="catalog" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Cardápio</TabsTrigger>
           <TabsTrigger value="orders" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Pedidos</TabsTrigger>
           <TabsTrigger value="leads" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Leads de Planos</TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Ajustes</TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Configurações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -933,21 +942,43 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Data de Entrega</Label>
-                    <Input 
-                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
-                      value={settings.nextDeliveryDate}
-                      onChange={(e) => handleSaveSettings("nextDeliveryDate", e.target.value)}
-                      placeholder="Ex: Sábado, 18/12"
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-bold h-12 rounded-xl bg-muted/20 border-none shadow-none">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                          {formatDateValue(settings.nextDeliveryDate) || "Selecionar data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-3xl" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={(() => { try { return parseISO(settings.nextDeliveryDate); } catch(e) { return undefined; } })()}
+                          onSelect={(date) => date && handleSaveSettings("nextDeliveryDate", date.toISOString())}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prazo Final p/ Pedidos</Label>
-                    <Input 
-                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
-                      value={settings.orderDeadline}
-                      onChange={(e) => handleSaveSettings("orderDeadline", e.target.value)}
-                      placeholder="Ex: Quinta-feira"
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-bold h-12 rounded-xl bg-muted/20 border-none shadow-none">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                          {formatDateValue(settings.orderDeadline) || "Selecionar data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-3xl" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={(() => { try { return parseISO(settings.orderDeadline); } catch(e) { return undefined; } })()}
+                          onSelect={(date) => date && handleSaveSettings("orderDeadline", date.toISOString())}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Informativo de Funcionamento (Exibido no Site)</Label>
