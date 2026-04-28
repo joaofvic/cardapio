@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload, Loader2, AlertTriangle, Clock } from "lucide-react";
+import { Search, MapPin, User, Utensils, Sparkles, ChevronLeft, ArrowLeft, FileText, Upload, Loader2, AlertTriangle, Clock, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Meal, CartItem } from "@/app/types/meal";
 import { MealCard } from "@/components/MealCard";
@@ -15,12 +15,14 @@ import { CitySelectionDialog } from "@/components/CitySelectionDialog";
 import { ComboManualConfigurator } from "@/components/ComboManualConfigurator";
 import { ComboAIConfigurator } from "@/components/ComboAIConfigurator";
 import { RecommendationSection } from "@/components/RecommendationSection";
+import { SpotlightSection } from "@/components/SpotlightSection";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 export type UserProfile = {
   name: string;
@@ -157,7 +159,6 @@ export default function HarvestBitesApp() {
 
   const handleOpenDetails = (meal: Meal) => {
     setSelectedMeal(meal);
-    // Atualiza histórico para recomendações de IA
     setBrowsingHistory(prev => {
       const newHistory = [meal.name, ...prev.filter(name => name !== meal.name)].slice(0, 5);
       localStorage.setItem('harvest_bites_history', JSON.stringify(newHistory));
@@ -198,7 +199,7 @@ export default function HarvestBitesApp() {
   const userFirstName = user?.name ? user.name.split(' ')[0] : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
+    <div className="max-w-4xl mx-auto px-4 pt-6 pb-24 font-body">
       <CitySelectionDialog 
         isOpen={isCityDialogOpen} 
         onOpenChange={setIsCityDialogOpen}
@@ -257,6 +258,10 @@ export default function HarvestBitesApp() {
         </div>
       </header>
 
+      {viewMode === 'menu' && searchQuery === "" && activeCategory === 'Todos' && (
+        <SpotlightSection />
+      )}
+
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both ease-out">
         
         {viewMode === 'menu' && (
@@ -282,11 +287,12 @@ export default function HarvestBitesApp() {
                       setActiveCategory(cat.id);
                     }
                   }}
-                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+                  className={cn(
+                    "px-6 py-2.5 rounded-full text-[11px] uppercase tracking-widest font-black transition-all duration-300 whitespace-nowrap",
                     activeCategory === cat.id 
                     ? 'bg-primary text-white shadow-lg shadow-primary/20' 
                     : 'bg-white text-muted-foreground hover:bg-muted shadow-sm'
-                  }`}
+                  )}
                 >
                   {cat.label}
                 </button>
@@ -312,12 +318,12 @@ export default function HarvestBitesApp() {
                 {loadingMeals ? (
                   <div className="col-span-full flex flex-col items-center justify-center py-20">
                     <Loader2 className="animate-spin text-primary mb-4" size={40} />
-                    <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Carregando cardápio...</p>
+                    <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">Carregando cardápio...</p>
                   </div>
                 ) : filteredMeals.length === 0 ? (
                   <div className="col-span-full text-center py-20">
                     <Utensils className="mx-auto text-muted-foreground/30 mb-4" size={64} />
-                    <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Nenhum prato disponível no momento.</p>
+                    <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">Nenhum prato encontrado.</p>
                   </div>
                 ) : filteredMeals.map((meal) => (
                   <MealCard 
@@ -372,7 +378,7 @@ export default function HarvestBitesApp() {
                     <div>
                       <h4 className="font-black text-primary uppercase text-sm tracking-widest flex items-center gap-2">
                         Enviar Meu Plano
-                        <span className="bg-primary text-white text-[10px] px-3 py-1 rounded-full font-black">NOVO</span>
+                        <span className="bg-primary text-white text-[10px] px-3 py-1 rounded-full font-black animate-pulse">NOVO</span>
                       </h4>
                       <p className="text-xs font-medium text-muted-foreground mt-1">Envie seu plano alimentar para montarmos seu kit</p>
                     </div>
@@ -382,31 +388,7 @@ export default function HarvestBitesApp() {
             </div>
           )}
 
-          {viewMode === 'combo-manual' && (
-            <div className="animate-in slide-in-from-right duration-300 ease-out">
-               <button 
-                onClick={() => {
-                  setEditingCombo(null);
-                  setViewMode('combo-type');
-                }}
-                className="flex items-center gap-2 text-primary font-black uppercase text-xs mb-6 hover:translate-x-[-4px] transition-transform"
-              >
-                <ArrowLeft size={16} /> Voltar
-              </button>
-              <ComboManualConfigurator 
-                user={user}
-                availableMeals={meals || []}
-                initialData={editingCombo}
-                onAddToCart={(combo) => {
-                  handleAddToCart(combo, 1);
-                  setViewMode('menu');
-                  setActiveCategory('Todos');
-                }}
-              />
-            </div>
-          )}
-
-          {viewMode === 'combo-ai' && (
+          {(viewMode === 'combo-manual' || viewMode === 'combo-ai') && (
             <div className="animate-in slide-in-from-right duration-300 ease-out">
                <button 
                 onClick={() => setViewMode('combo-type')}
@@ -414,16 +396,29 @@ export default function HarvestBitesApp() {
               >
                 <ArrowLeft size={16} /> Voltar
               </button>
-              <ComboAIConfigurator 
-                user={user}
-                availableMeals={meals || []}
-                onIdentifyRequired={() => setIsProfileOpen(true)}
-                onAddToCart={(combo) => {
-                  handleAddToCart(combo, 1);
-                  setViewMode('menu');
-                  setActiveCategory('Todos');
-                }}
-              />
+              {viewMode === 'combo-manual' ? (
+                <ComboManualConfigurator 
+                  user={user}
+                  availableMeals={meals || []}
+                  initialData={editingCombo}
+                  onAddToCart={(combo) => {
+                    handleAddToCart(combo, 1);
+                    setViewMode('menu');
+                    setActiveCategory('Todos');
+                  }}
+                />
+              ) : (
+                <ComboAIConfigurator 
+                  user={user}
+                  availableMeals={meals || []}
+                  onIdentifyRequired={() => setIsProfileOpen(true)}
+                  onAddToCart={(combo) => {
+                    handleAddToCart(combo, 1);
+                    setViewMode('menu');
+                    setActiveCategory('Todos');
+                  }}
+                />
+              )}
             </div>
           )}
         </main>

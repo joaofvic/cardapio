@@ -56,7 +56,9 @@ import {
   BarChart3,
   ListFilter,
   EyeOff,
-  BrainCircuit
+  BrainCircuit,
+  ArrowUpRight,
+  History
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,7 +75,7 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "@/components/ui/table";
+} from "@/table";
 import {
   Select,
   SelectContent,
@@ -110,7 +112,7 @@ import {
 import { collection, query, orderBy, limit, doc, updateDoc, setDoc, deleteDoc, addDoc, getDocs } from "firebase/firestore";
 import { Order, Meal } from "@/app/types/meal";
 import { MEALS } from "@/app/data/meals";
-import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval } from "date-fns";
+import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -125,6 +127,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell
 } from "recharts";
 
 interface MealPlanLead {
@@ -190,6 +195,7 @@ export default function AdminDashboard() {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isCouponListOpen, setIsCouponListOpen] = useState(false);
   const [isCouponEditorOpen, setIsCouponEditorOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<MealPlanLead | null>(null);
   
   const [editingMeal, setEditingMeal] = useState<Partial<Meal> | null>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -272,36 +278,39 @@ export default function AdminDashboard() {
   }, [firestore, meals, categoriesData, loadingMeals, loadingCategories]);
 
   const stats = useMemo(() => {
-    const filteredOrders = orders?.filter(o => {
-      const orderDate = new Date(o.createdAt);
-      return selectedDate ? isSameDay(orderDate, selectedDate) : true;
-    }) || [];
-
-    const revenue = filteredOrders.reduce((acc, order) => acc + order.total, 0);
-    const active = filteredOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
+    const dayOrders = orders?.filter(o => isSameDay(new Date(o.createdAt), selectedDate || new Date())) || [];
+    const revenue = dayOrders.reduce((acc, order) => acc + order.total, 0);
+    const active = dayOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
     
-    const leadsCount = leads?.filter(l => l.status === 'pending').length || 0;
+    const totalLeads = leads?.length || 0;
+    const pendingLeads = leads?.filter(l => l.status === 'pending').length || 0;
+    const conversionRate = totalLeads > 0 ? ((totalLeads - pendingLeads) / totalLeads * 100).toFixed(1) : "0";
+
+    const itemSales: Record<string, number> = {};
+    orders?.forEach(o => o.items.forEach(i => {
+      itemSales[i.name] = (itemSales[i.name] || 0) + i.quantity;
+    }));
+    const bestSeller = Object.entries(itemSales).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
     
     return {
-      totalSales: filteredOrders.length,
+      totalSales: dayOrders.length,
       activeOrders: active,
       revenue,
-      pendingLeads: leadsCount
+      pendingLeads,
+      conversionRate,
+      bestSeller
     };
   }, [orders, leads, selectedDate]);
 
   const chartData = useMemo(() => {
     if (!orders) return [];
-    const now = new Date();
-    const start = startOfMonth(now);
-    const end = endOfMonth(now);
-    const days = eachDayOfInterval({ start, end });
+    const days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), i)).reverse();
 
     return days.map(day => {
       const dayOrders = orders.filter(o => isSameDay(new Date(o.createdAt), day));
       const revenue = dayOrders.reduce((acc, o) => acc + o.total, 0);
       return {
-        date: format(day, "dd/MM"),
+        date: format(day, "eee", { locale: ptBR }).toUpperCase(),
         vendas: revenue
       };
     });
@@ -378,7 +387,8 @@ export default function AdminDashboard() {
       'preparing': { label: 'Preparando', color: 'bg-blue-100 text-blue-700' },
       'delivery': { label: 'Em Rota', color: 'bg-purple-100 text-purple-700' },
       'completed': { label: 'Concluído', color: 'bg-green-100 text-green-700' },
-      'cancelled': { label: 'Cancelado', color: 'bg-red-100 text-red-700' }
+      'cancelled': { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
+      'responded': { label: 'Respondido', color: 'bg-green-100 text-green-700' }
     };
     const { label, color } = map[status] || { label: status, color: 'bg-gray-100' };
     return <Badge className={cn("border-none px-3 py-1 text-[10px] font-black uppercase", color)}>{label}</Badge>;
@@ -412,10 +422,10 @@ export default function AdminDashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <StatCard title="Receita Bruta" value={`R$ ${stats.revenue.toFixed(2)}`} icon={Wallet} trend="Sincronizado" color="primary" />
-        <StatCard title="Total Pedidos" value={stats.totalSales.toString()} icon={ShoppingBag} trend="Do período" color="secondary" />
-        <StatCard title="Pedidos Ativos" value={stats.activeOrders.toString()} icon={Clock} trend="Acompanhamento" color="amber" />
-        <StatCard title="Leads de IA" value={stats.pendingLeads.toString()} icon={Sparkles} trend="Novos planos" color="purple" />
+        <StatCard title="Receita (Dia)" value={`R$ ${stats.revenue.toFixed(2)}`} icon={Wallet} trend="Sincronizado" color="primary" />
+        <StatCard title="Pedidos Hoje" value={stats.totalSales.toString()} icon={ShoppingBag} trend="Do período" color="secondary" />
+        <StatCard title="Leads de IA" value={stats.pendingLeads.toString()} icon={Sparkles} trend={`${stats.conversionRate}% Conv.`} color="purple" />
+        <StatCard title="Best Seller" value={stats.bestSeller} icon={TrendingUp} trend="Prato do momento" color="amber" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -424,7 +434,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="catalog" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Cardápio</TabsTrigger>
           <TabsTrigger value="orders" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Pedidos</TabsTrigger>
           <TabsTrigger value="leads" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Leads de Planos</TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Configurações</TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Ajustes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -432,7 +442,7 @@ export default function AdminDashboard() {
             <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white p-8">
               <div className="flex justify-between items-center mb-8">
                 <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
-                  <BarChart3 className="text-primary" size={20} /> Tendência de Vendas
+                  <TrendingUp className="text-primary" size={20} /> Tendência de Vendas (7 dias)
                 </CardTitle>
               </div>
               <div className="h-[300px] w-full">
@@ -448,22 +458,34 @@ export default function AdminDashboard() {
                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold'}} />
                     <YAxis hide />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none' }}
+                      contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none', fontWeight: 'bold' }}
                       formatter={(v: any) => [`R$ ${v}`, 'Vendas']}
                     />
-                    <Area type="monotone" dataKey="vendas" stroke="hsl(var(--primary))" strokeWidth={3} fill="url(#colorSales)" />
+                    <Area type="monotone" dataKey="vendas" stroke="hsl(var(--primary))" strokeWidth={4} fill="url(#colorSales)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </Card>
             <div className="space-y-8">
               <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
-                <h3 className="text-lg font-black uppercase mb-6 tracking-tighter">Ações Rápidas</h3>
+                <h3 className="text-lg font-black uppercase mb-6 tracking-tighter">Atalhos Operacionais</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <QuickLinkButton label="Novo Cupom" icon={Ticket} onClick={() => { setActiveTab("settings"); setIsCouponEditorOpen(true); }} />
                   <QuickLinkButton label="Novo Prato" icon={Plus} onClick={() => { setActiveTab("catalog"); setIsMealDialogOpen(true); }} />
                   <QuickLinkButton label="Abrir Delivery" icon={Store} onClick={() => handleSaveSettings("isDeliveryOpen", true)} />
                   <QuickLinkButton label="Fechar Delivery" icon={XCircle} onClick={() => handleSaveSettings("isDeliveryOpen", false)} />
+                </div>
+              </Card>
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Status do Delivery</h3>
+                  <Badge className={cn("border-none", settings.isDeliveryOpen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                    {settings.isDeliveryOpen ? "ABERTO" : "FECHADO"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-3 h-3 rounded-full animate-pulse", settings.isDeliveryOpen ? "bg-green-500" : "bg-red-500")} />
+                  <p className="text-xs font-bold uppercase">{settings.isDeliveryOpen ? "Recebendo pedidos normalmente" : "Pedidos pausados temporariamente"}</p>
                 </div>
               </Card>
             </div>
@@ -507,7 +529,7 @@ export default function AdminDashboard() {
                 <div className={cn("p-4 rounded-2xl", isComboView ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
                   <Utensils size={28} />
                 </div>
-                <span className="font-black text-[10px] uppercase tracking-widest">Montagem de Combos</span>
+                <span className="font-black text-[10px] uppercase tracking-widest text-center">Montagem de Marmitas (Manual)</span>
               </button>
             </Card>
 
@@ -515,10 +537,10 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h3 className="text-2xl font-black uppercase tracking-tighter">
-                    {isComboView ? "Itens para Montagem de Combos" : "Gestão do Cardápio"}
+                    {isComboView ? "Itens do Combo Semanal" : "Cardápio Principal"}
                   </h3>
                   <p className="text-muted-foreground text-xs font-bold uppercase mt-1">
-                    {isComboView ? "Ative o que o cliente pode escolher no kit personalizado" : "Gerencie seus pratos, preços e disponibilidade"}
+                    {isComboView ? "Libere os ingredientes para montagem manual do kit" : "Gerencie seus pratos gourmet prontos"}
                   </p>
                 </div>
                 {!isComboView && (
@@ -532,10 +554,10 @@ export default function AdminDashboard() {
                 <Table>
                   <TableHeader className="bg-muted/30">
                     <TableRow>
-                      <TableHead className="font-black text-[10px] uppercase p-6">Prato / Ingrediente</TableHead>
+                      <TableHead className="font-black text-[10px] uppercase p-6">Item</TableHead>
                       <TableHead className="font-black text-[10px] uppercase p-6 text-center">Categoria</TableHead>
                       {isComboView ? (
-                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Liberado p/ Combo?</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase p-6 text-center">Status no Combo</TableHead>
                       ) : (
                         <>
                           <TableHead className="font-black text-[10px] uppercase p-6 text-center">Preço</TableHead>
@@ -557,7 +579,7 @@ export default function AdminDashboard() {
                               </div>
                               <div>
                                 <h4 className="font-black text-sm uppercase leading-none">{meal.name}</h4>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">ID: {meal.id}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">{meal.protein}g P • {meal.calories} Kcal</p>
                               </div>
                             </div>
                           </TableCell>
@@ -566,11 +588,16 @@ export default function AdminDashboard() {
                           </TableCell>
                           {isComboView ? (
                             <TableCell className="p-6 text-center">
-                              <Switch 
-                                checked={meal.isAvailableForCombo} 
-                                onCheckedChange={(v) => handleToggleComboAvailability(meal.id, v)} 
-                                className="data-[state=checked]:bg-primary"
-                              />
+                              <div className="flex flex-col items-center gap-2">
+                                <Switch 
+                                  checked={meal.isAvailableForCombo} 
+                                  onCheckedChange={(v) => handleToggleComboAvailability(meal.id, v)} 
+                                  className="data-[state=checked]:bg-primary"
+                                />
+                                <span className="text-[9px] font-black uppercase text-muted-foreground">
+                                  {meal.isAvailableForCombo ? "Disponível" : "Indisponível"}
+                                </span>
+                              </div>
                             </TableCell>
                           ) : (
                             <>
@@ -615,7 +642,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
                   <div className="space-y-1">
                     <h4 className="font-black text-sm uppercase">Status do Delivery</h4>
-                    <p className="text-xs font-medium text-muted-foreground">Abrir ou fechar a loja instantaneamente.</p>
+                    <p className="text-xs font-medium text-muted-foreground">Controle a abertura instantânea da loja.</p>
                   </div>
                   <Switch 
                     checked={settings.isDeliveryOpen} 
@@ -626,8 +653,8 @@ export default function AdminDashboard() {
 
                 <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
                   <div className="space-y-1">
-                    <h4 className="font-black text-sm uppercase flex items-center gap-2">IA de Recomendação <BrainCircuit size={16} className="text-primary" /></h4>
-                    <p className="text-xs font-medium text-muted-foreground">Ativar análise automática de planos alimentares.</p>
+                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Análise de IA <BrainCircuit size={16} className="text-primary" /></h4>
+                    <p className="text-xs font-medium text-muted-foreground">Processamento automático de planos alimentares.</p>
                   </div>
                   <Switch 
                     checked={settings.isAiAnalysisEnabled} 
@@ -638,8 +665,8 @@ export default function AdminDashboard() {
 
                 <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
                   <div className="space-y-1">
-                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Categoria Vegetariana <Salad size={16} className="text-primary" /></h4>
-                    <p className="text-xs font-medium text-muted-foreground">Mostrar ou ocultar itens vegetarianos no menu.</p>
+                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Visibilidade Veggie <Salad size={16} className="text-primary" /></h4>
+                    <p className="text-xs font-medium text-muted-foreground">Exibir categoria vegetariana no menu.</p>
                   </div>
                   <Switch 
                     checked={settings.isVeggieCategoryVisible} 
@@ -651,7 +678,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
                   <div className="space-y-1">
                     <h4 className="font-black text-sm uppercase flex items-center gap-2">Uso de Cupons <Ticket size={16} className="text-primary" /></h4>
-                    <p className="text-xs font-medium text-muted-foreground">Habilitar campo de cupom no checkout.</p>
+                    <p className="text-xs font-medium text-muted-foreground">Habilitar checkout com descontos.</p>
                   </div>
                   <Switch 
                     checked={settings.isCouponsEnabled} 
@@ -665,20 +692,20 @@ export default function AdminDashboard() {
             <div className="space-y-8">
               <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
                 <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
-                  <CalendarClock className="text-primary" /> Prazos e Entregas
+                  <CalendarClock className="text-primary" /> Agenda de Entregas
                 </CardTitle>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Entrega</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Data de Entrega</Label>
                     <Input 
                       className="rounded-xl h-12 bg-muted/20 border-none font-bold"
                       value={settings.nextDeliveryDate}
                       onChange={(e) => handleSaveSettings("nextDeliveryDate", e.target.value)}
-                      placeholder="Ex: 18/12/2025"
+                      placeholder="Ex: Sábado, 18/12"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prazo p/ Pedidos</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prazo Final p/ Pedidos</Label>
                     <Input 
                       className="rounded-xl h-12 bg-muted/20 border-none font-bold"
                       value={settings.orderDeadline}
@@ -687,7 +714,7 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Horário de Funcionamento</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Informativo de Funcionamento</Label>
                     <Textarea 
                       className="rounded-2xl h-24 bg-muted/20 border-none p-4 font-bold focus-visible:ring-primary"
                       value={settings.openingHours}
@@ -704,18 +731,18 @@ export default function AdminDashboard() {
                 </h3>
                 <div className="space-y-6 relative z-10">
                   <div className="bg-white/10 p-6 rounded-3xl border border-white/20">
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Código Ativo Principal</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Destaque Atual</p>
                     <div className="flex items-center justify-between">
                       <span className="text-3xl font-black tracking-tight">{settings.activeCouponCode}</span>
                       <Badge className="bg-secondary text-secondary-foreground font-black px-4 py-1">{settings.couponDiscountPercent}% OFF</Badge>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <Button className="flex-1 h-14 rounded-2xl bg-white text-primary hover:bg-white/90 font-black uppercase text-xs" onClick={() => setIsCouponListOpen(true)}>
-                      Listar Cupons
+                    <Button className="flex-1 h-14 rounded-2xl bg-white text-primary hover:bg-white/90 font-black uppercase text-[10px] tracking-widest" onClick={() => setIsCouponListOpen(true)}>
+                      Gerenciar Cupons
                     </Button>
-                    <Button variant="outline" className="flex-1 h-14 rounded-2xl border-white/20 text-white hover:bg-white/10 font-black uppercase text-xs" onClick={() => { setEditingCoupon({}); setIsCouponEditorOpen(true); }}>
-                      Novo Cupom
+                    <Button variant="outline" className="flex-1 h-14 rounded-2xl border-white/20 text-white hover:bg-white/10 font-black uppercase text-[10px] tracking-widest" onClick={() => { setEditingCoupon({}); setIsCouponEditorOpen(true); }}>
+                      Novo Código
                     </Button>
                   </div>
                 </div>
@@ -728,44 +755,53 @@ export default function AdminDashboard() {
            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
               <CardHeader className="p-8">
                 <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-                  <Sparkles className="text-primary" /> Leads de Planos Alimentares
+                  <Sparkles className="text-primary" /> Análise de Planos Alimentares
                 </CardTitle>
-                <CardDescription>Clientes que enviaram dietas para orçamento.</CardDescription>
+                <CardDescription>Clientes interessados em kits personalizados baseados em dietas.</CardDescription>
               </CardHeader>
               <CardContent className="p-8 pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {leads?.map((lead) => (
-                    <div key={lead.id} className="bg-muted/10 p-6 rounded-[2rem] border border-border/40 hover:border-primary/40 transition-all">
-                      <div className="flex justify-between items-start mb-4">
+                    <div key={lead.id} className="group bg-muted/10 p-6 rounded-[2rem] border border-border/40 hover:border-primary/40 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-xl">
+                      <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-3">
-                           <div className="bg-white p-3 rounded-2xl shadow-sm"><UserIcon size={20} className="text-primary" /></div>
+                           <div className="bg-white p-3 rounded-2xl shadow-sm border border-border/20 group-hover:bg-primary/10 transition-colors"><UserIcon size={20} className="text-primary" /></div>
                            <div>
-                             <h4 className="font-black text-sm uppercase">{lead.customerName}</h4>
-                             <p className="text-[10px] font-bold text-muted-foreground uppercase">{lead.userId}</p>
+                             <h4 className="font-black text-sm uppercase leading-none">{lead.customerName}</h4>
+                             <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">ID: {lead.userId}</p>
                            </div>
                         </div>
                         {getStatusBadge(lead.status)}
                       </div>
                       <div className="space-y-4">
-                        <div className="bg-white p-4 rounded-2xl shadow-sm text-[11px] font-medium italic text-muted-foreground line-clamp-3 italic">
-                          "{lead.textPlan || "Sem descrição de texto..."}"
+                        <div className="bg-white p-4 rounded-2xl shadow-inner text-[11px] font-medium italic text-muted-foreground min-h-[80px] line-clamp-4 leading-relaxed">
+                          "{lead.textPlan || "Nenhum detalhe adicional informado."}"
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-black text-muted-foreground uppercase">{format(new Date(lead.createdAt), "dd MMM, HH:mm", { locale: ptBR })}</span>
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Enviado em</span>
+                            <span className="text-[10px] font-bold text-foreground">{format(new Date(lead.createdAt), "dd MMM, HH:mm", { locale: ptBR })}</span>
+                          </div>
                           <div className="flex gap-2">
                             {lead.photoDataUri && (
-                              <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 font-black text-[9px] uppercase" onClick={() => window.open(lead.photoDataUri, '_blank')}>
-                                <Eye size={12} className="mr-2" /> Foto
+                              <Button size="icon" variant="outline" className="rounded-xl h-10 w-10 text-primary border-primary/20" onClick={() => setSelectedLead(lead)}>
+                                <Eye size={16} />
                               </Button>
                             )}
-                            <Button size="sm" className="rounded-xl h-10 px-4 font-black text-[9px] uppercase" onClick={() => handleUpdateStatus(lead.id, lead.status === 'pending' ? 'responded' : 'pending')}>
-                              {lead.status === 'pending' ? 'Finalizar' : 'Reabrir'}
+                            <Button className="rounded-xl h-10 px-5 font-black text-[9px] uppercase tracking-widest" onClick={() => handleUpdateStatus(lead.id, lead.status === 'pending' ? 'responded' : 'pending')}>
+                              {lead.status === 'pending' ? 'Marcar como Lido' : 'Reabrir'}
                             </Button>
                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {leads?.length === 0 && (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 opacity-40">
+                      <History size={64} className="mb-4 text-muted-foreground" />
+                      <p className="font-black text-xs uppercase tracking-widest">Nenhum lead pendente</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
            </Card>
@@ -776,7 +812,7 @@ export default function AdminDashboard() {
               <CardHeader className="p-8 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl font-black uppercase tracking-tighter">Fluxo de Pedidos</CardTitle>
-                  <CardDescription>Acompanhe e gerencie as entregas do dia.</CardDescription>
+                  <CardDescription>Gestão centralizada das entregas.</CardDescription>
                 </div>
                 <div className="flex gap-3">
                   <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -796,9 +832,9 @@ export default function AdminDashboard() {
                    <Table>
                      <TableHeader className="bg-muted/30">
                        <TableRow>
-                         <TableHead className="font-black text-[10px] uppercase p-6">ID Pedido</TableHead>
+                         <TableHead className="font-black text-[10px] uppercase p-6">Pedido</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6">Cliente</TableHead>
-                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Itens</TableHead>
+                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Qtde</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6 text-center">Total</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6 text-center">Status</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6 text-right">Ações</TableHead>
@@ -808,52 +844,72 @@ export default function AdminDashboard() {
                         {orders?.filter(o => cityFilter === 'all' || o.address?.city === cityFilter).map(order => (
                           <React.Fragment key={order.id}>
                             <TableRow className="hover:bg-muted/10 cursor-pointer" onClick={() => setExpandedOrders(prev => prev.includes(order.id) ? prev.filter(id => id !== order.id) : [...prev, order.id])}>
-                              <TableCell className="p-6 font-black text-sm uppercase">{order.id.slice(-6)}</TableCell>
+                              <TableCell className="p-6 font-black text-sm uppercase">#{order.id.slice(-4)}</TableCell>
                               <TableCell className="p-6">
-                                <div className="font-black text-sm uppercase">{order.customerName}</div>
-                                <div className="text-[10px] font-bold text-muted-foreground uppercase">{order.address?.city}</div>
+                                <div className="font-black text-sm uppercase leading-none">{order.customerName}</div>
+                                <div className="text-[9px] font-bold text-muted-foreground uppercase mt-1">{order.address?.city}</div>
                               </TableCell>
                               <TableCell className="p-6 text-center font-bold text-sm">{order.items.length}</TableCell>
                               <TableCell className="p-6 text-center font-black text-primary">R$ {order.total.toFixed(2)}</TableCell>
                               <TableCell className="p-6 text-center">{getStatusBadge(order.status)}</TableCell>
                               <TableCell className="p-6 text-right">
-                                <Select value={order.status} onValueChange={(s) => handleUpdateStatus(order.id, s)}>
-                                  <SelectTrigger className="h-9 w-[130px] rounded-xl border-none bg-muted/50 font-black text-[10px] uppercase">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-2xl">
-                                    <SelectItem value="pending">Pendente</SelectItem>
-                                    <SelectItem value="preparing">Preparando</SelectItem>
-                                    <SelectItem value="delivery">Em Rota</SelectItem>
-                                    <SelectItem value="completed">Concluído</SelectItem>
-                                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <div className="flex justify-end items-center gap-2">
+                                  <Select value={order.status} onValueChange={(s) => handleUpdateStatus(order.id, s)}>
+                                    <SelectTrigger className="h-9 w-[130px] rounded-xl border-none bg-muted/50 font-black text-[10px] uppercase">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl">
+                                      <SelectItem value="pending">Pendente</SelectItem>
+                                      <SelectItem value="preparing">Preparando</SelectItem>
+                                      <SelectItem value="delivery">Em Rota</SelectItem>
+                                      <SelectItem value="completed">Concluído</SelectItem>
+                                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {expandedOrders.includes(order.id) ? <ChevronDown size={14} className="text-muted-foreground rotate-180 transition-transform" /> : <ChevronDown size={14} className="text-muted-foreground transition-transform" />}
+                                </div>
                               </TableCell>
                             </TableRow>
                             {expandedOrders.includes(order.id) && (
                               <TableRow className="bg-muted/5">
                                 <TableCell colSpan={6} className="p-8">
-                                  <div className="grid grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
                                     <div className="space-y-4">
-                                      <h5 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Itens do Pedido</h5>
+                                      <h5 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                        <Package size={14} /> Detalhamento do Pedido
+                                      </h5>
                                       {order.items.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-2xl border border-border/40">
-                                          <div className="flex items-center gap-3">
-                                            <span className="font-black text-primary text-xs">{item.quantity}x</span>
-                                            <span className="font-bold text-xs uppercase">{item.name}</span>
+                                        <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-border/40 shadow-sm">
+                                          <div className="flex items-center gap-4">
+                                            <div className="bg-primary/10 w-10 h-10 rounded-xl flex items-center justify-center font-black text-primary text-xs">{item.quantity}x</div>
+                                            <div>
+                                              <span className="font-bold text-xs uppercase block">{item.name}</span>
+                                              <span className="text-[9px] font-black text-muted-foreground uppercase">Unid: R$ {item.price.toFixed(2)}</span>
+                                            </div>
                                           </div>
-                                          <span className="text-xs font-black">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                                          <span className="text-sm font-black text-foreground">R$ {(item.price * item.quantity).toFixed(2)}</span>
                                         </div>
                                       ))}
                                     </div>
                                     <div className="space-y-4">
-                                      <h5 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Dados de Entrega</h5>
-                                      <div className="bg-white p-6 rounded-3xl border border-border/40 space-y-3">
-                                        <div className="flex items-center gap-2 text-xs font-bold uppercase"><MapPin size={14} className="text-primary" /> {order.address?.street}, {order.address?.number}</div>
-                                        <div className="text-[10px] font-bold text-muted-foreground uppercase ml-6">Bairro: {order.address?.neighborhood}</div>
-                                        <div className="text-[10px] font-bold text-muted-foreground uppercase ml-6 italic">Ref: {order.address?.reference || "Sem referência"}</div>
-                                        <div className="flex items-center gap-2 text-xs font-bold uppercase pt-2 border-t"><Wallet size={14} className="text-primary" /> Pagamento: {order.paymentMethod}</div>
+                                      <h5 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                        <MapPin size={14} /> Logística de Entrega
+                                      </h5>
+                                      <div className="bg-white p-6 rounded-[2rem] border border-border/40 space-y-4 shadow-sm">
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2 text-xs font-black uppercase text-foreground">
+                                            <MapPin size={14} className="text-primary" /> {order.address?.street}, {order.address?.number}
+                                          </div>
+                                          <div className="text-[10px] font-bold text-muted-foreground uppercase ml-6">Bairro: {order.address?.neighborhood}</div>
+                                          <div className="text-[10px] font-bold text-muted-foreground uppercase ml-6 italic opacity-70">Ponto de Ref: {order.address?.reference || "Não informado"}</div>
+                                        </div>
+                                        <Separator />
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2 text-xs font-black uppercase text-foreground">
+                                            <Wallet size={14} className="text-primary" /> Pagamento
+                                          </div>
+                                          <Badge className="bg-muted text-foreground border-none font-black text-[9px] uppercase">{order.paymentMethod}</Badge>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
@@ -870,18 +926,35 @@ export default function AdminDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
+      {/* Leads Photo Preview Dialog */}
+      <Dialog open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
+        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          {selectedLead && (
+            <div className="relative aspect-square w-full">
+              <Image src={selectedLead.photoDataUri || ""} alt="Plano Alimentar" fill className="object-contain bg-black" />
+              <button 
+                onClick={() => setSelectedLead(null)}
+                className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 p-2 rounded-full backdrop-blur-md transition-colors"
+              >
+                <XCircle className="text-white" />
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Existing Dialogs for Meal, Category, Coupon */}
       <Dialog open={isMealDialogOpen} onOpenChange={setIsMealDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-8">
-          <DialogHeader><DialogTitle className="text-2xl font-black uppercase tracking-tighter">Editar Prato</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-2xl font-black uppercase tracking-tighter">Ficha Técnica do Prato</DialogTitle></DialogHeader>
           <form onSubmit={handleSaveMeal} className="space-y-6 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Nome do Prato</Label>
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Nome Comercial</Label>
                 <Input value={editingMeal?.name || ""} onChange={e => setEditingMeal({...editingMeal, name: e.target.value})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Categoria</Label>
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Categoria</Label>
                 <Select value={editingMeal?.category} onValueChange={v => setEditingMeal({...editingMeal, category: v as any})}>
                   <SelectTrigger className="rounded-xl h-12 bg-muted/30 border-none font-bold"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-2xl">
@@ -890,55 +963,69 @@ export default function AdminDashboard() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Preço (R$)</Label>
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Preço (R$)</Label>
                 <Input type="number" step="0.01" value={editingMeal?.price || 0} onChange={e => setEditingMeal({...editingMeal, price: parseFloat(e.target.value)})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Proteína (g)</Label>
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Proteína (g)</Label>
                 <Input type="number" value={editingMeal?.protein || 0} onChange={e => setEditingMeal({...editingMeal, protein: parseInt(e.target.value)})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Calorias</Label>
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Calorias (Kcal)</Label>
                 <Input type="number" value={editingMeal?.calories || 0} onChange={e => setEditingMeal({...editingMeal, calories: parseInt(e.target.value)})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase ml-1">Descrição</Label>
-              <Textarea value={editingMeal?.description || ""} onChange={e => setEditingMeal({...editingMeal, description: e.target.value})} className="rounded-2xl h-24 bg-muted/30 border-none font-medium" />
+              <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Descrição Gastronômica</Label>
+              <Textarea value={editingMeal?.description || ""} onChange={e => setEditingMeal({...editingMeal, description: e.target.value})} className="rounded-2xl h-24 bg-muted/30 border-none font-medium resize-none" />
             </div>
-            <div className="flex items-center gap-2 p-4 bg-muted/20 rounded-2xl">
+            <div className="flex items-center gap-3 p-5 bg-primary/5 rounded-2xl border border-primary/10">
               <Switch checked={editingMeal?.isAvailableForCombo} onCheckedChange={v => setEditingMeal({...editingMeal, isAvailableForCombo: v})} />
-              <Label className="text-xs font-bold uppercase">Disponível para Combo Manual</Label>
+              <div className="space-y-0.5">
+                <Label className="text-xs font-black uppercase tracking-tight">Liberar para Montagem Manual</Label>
+                <p className="text-[9px] font-bold text-muted-foreground leading-none">O cliente poderá escolher este item no configurador de marmitas.</p>
+              </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-full font-black uppercase">Salvar Alterações</Button>
+            <Button type="submit" className="w-full h-14 rounded-full font-black uppercase tracking-widest shadow-xl shadow-primary/20">Salvar Alterações</Button>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isCouponListOpen} onOpenChange={setIsCouponListOpen}>
         <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] p-8">
-           <DialogHeader><DialogTitle className="text-2xl font-black uppercase tracking-tighter">Cupons de Desconto</DialogTitle></DialogHeader>
+           <DialogHeader><DialogTitle className="text-2xl font-black uppercase tracking-tighter">Central de Cupons</DialogTitle></DialogHeader>
            <div className="pt-6">
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
                   {coupons?.length === 0 ? (
-                    <div className="p-20 text-center font-bold text-muted-foreground uppercase text-xs tracking-widest">Nenhum cupom cadastrado.</div>
+                    <div className="p-20 text-center flex flex-col items-center gap-4 opacity-30">
+                      <Ticket size={48} />
+                      <p className="font-black text-xs uppercase tracking-widest">Nenhum cupom ativo</p>
+                    </div>
                   ) : coupons?.map(cp => (
-                    <div key={cp.id} className="flex items-center justify-between p-6 bg-muted/30 rounded-3xl border border-border/40">
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg font-black text-primary">{cp.code}</span>
-                          <Badge className="bg-primary/10 text-primary border-none">{cp.discountPercent}% OFF</Badge>
+                    <div key={cp.id} className="group flex items-center justify-between p-6 bg-muted/30 rounded-[2rem] border border-border/40 hover:bg-white hover:border-primary/40 transition-all shadow-sm">
+                      <div className="flex items-center gap-6">
+                        <div className="bg-primary/10 p-4 rounded-2xl text-primary font-black text-xl tracking-tighter shadow-inner">
+                          {cp.code}
                         </div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">{cp.description} • De: {cp.owner}</p>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-black text-sm uppercase leading-none">{cp.description}</h4>
+                            <Badge className="bg-primary text-white border-none text-[9px] font-black h-5">{cp.discountPercent}% OFF</Badge>
+                          </div>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Responsável: {cp.owner}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Switch checked={cp.isActive} onCheckedChange={(v) => {
-                          const ref = doc(firestore!, "coupons", cp.id);
-                          updateDoc(ref, { isActive: v });
-                        }} />
-                        <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground" onClick={() => { setEditingCoupon(cp); setIsCouponEditorOpen(true); }}>
-                          <Pencil size={16} />
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-end gap-1">
+                          <Switch checked={cp.isActive} onCheckedChange={(v) => {
+                            const ref = doc(firestore!, "coupons", cp.id);
+                            updateDoc(ref, { isActive: v });
+                          }} />
+                          <span className="text-[8px] font-black uppercase text-muted-foreground">{cp.isActive ? "Ativo" : "Inativo"}</span>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-primary hover:bg-primary/10" onClick={() => { setEditingCoupon(cp); setIsCouponEditorOpen(true); }}>
+                          <Pencil size={18} />
                         </Button>
                       </div>
                     </div>
@@ -951,27 +1038,27 @@ export default function AdminDashboard() {
 
       <Dialog open={isCouponEditorOpen} onOpenChange={setIsCouponEditorOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8">
-          <DialogHeader><DialogTitle className="text-2xl font-black uppercase tracking-tighter">Configurar Cupom</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-2xl font-black uppercase tracking-tighter">Criar Código de Desconto</DialogTitle></DialogHeader>
           <form onSubmit={handleSaveCoupon} className="space-y-6 pt-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase ml-1">Código do Cupom</Label>
-              <Input value={editingCoupon?.code || ""} onChange={e => setEditingCoupon({...editingCoupon, code: e.target.value.toUpperCase()})} className="rounded-xl h-12 bg-muted/30 border-none font-black text-center text-lg" placeholder="EX: VERÃO20" />
+              <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Código Único (Sem espaços)</Label>
+              <Input value={editingCoupon?.code || ""} onChange={e => setEditingCoupon({...editingCoupon, code: e.target.value.toUpperCase()})} className="rounded-xl h-14 bg-muted/30 border-none font-black text-center text-2xl tracking-tighter" placeholder="EX: VERÃO30" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Desconto (%)</Label>
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Desconto (%)</Label>
                 <Input type="number" value={editingCoupon?.discountPercent || 0} onChange={e => setEditingCoupon({...editingCoupon, discountPercent: parseInt(e.target.value)})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1">Proprietário</Label>
-                <Input value={editingCoupon?.owner || ""} onChange={e => setEditingCoupon({...editingCoupon, owner: e.target.value})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" placeholder="Nome da pessoa" />
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Proprietário/Influencer</Label>
+                <Input value={editingCoupon?.owner || ""} onChange={e => setEditingCoupon({...editingCoupon, owner: e.target.value})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" placeholder="Nome" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase ml-1">Descrição/Campanha</Label>
-              <Input value={editingCoupon?.description || ""} onChange={e => setEditingCoupon({...editingCoupon, description: e.target.value})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
+              <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Campanha Associada</Label>
+              <Input value={editingCoupon?.description || ""} onChange={e => setEditingCoupon({...editingCoupon, description: e.target.value})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" placeholder="Ex: Black Friday" />
             </div>
-            <Button type="submit" className="w-full h-14 rounded-full font-black uppercase">Ativar Cupom</Button>
+            <Button type="submit" className="w-full h-14 rounded-full font-black uppercase tracking-widest shadow-xl shadow-primary/20">Ativar Desconto</Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -991,17 +1078,22 @@ function StatCard({ title, value, icon: Icon, trend, color }: { title: string, v
       <div className={cn("p-4 rounded-[1.5rem] w-fit mb-6 transition-transform group-hover:scale-110", colorMap[color])}>
         <Icon size={28} />
       </div>
-      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{title}</p>
-      <h3 className="text-3xl font-black text-foreground tracking-tighter mt-1">{value}</h3>
-      <p className="text-[10px] font-bold text-primary mt-2">{trend}</p>
+      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest leading-none">{title}</p>
+      <h3 className="text-3xl font-black text-foreground tracking-tighter mt-2 line-clamp-1">{value}</h3>
+      <div className="flex items-center gap-1.5 mt-2">
+        <ArrowUpRight size={14} className="text-primary" />
+        <p className="text-[10px] font-black text-primary uppercase">{trend}</p>
+      </div>
     </Card>
   );
 }
 
 function QuickLinkButton({ label, icon: Icon, onClick }: { label: string, icon: any, onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center justify-center p-4 rounded-2xl bg-muted/30 hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20 transition-all gap-2">
-      <Icon size={18} />
+    <button onClick={onClick} className="flex flex-col items-center justify-center p-4 rounded-2xl bg-muted/30 hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20 transition-all gap-2 group">
+      <div className="bg-white p-2 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors shadow-sm">
+        <Icon size={18} />
+      </div>
       <span className="text-[9px] font-black uppercase tracking-tight">{label}</span>
     </button>
   );

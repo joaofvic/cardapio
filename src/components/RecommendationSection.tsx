@@ -3,10 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { Meal } from "@/app/types/meal";
-import { MEALS } from "@/app/data/meals";
 import { aiMealRecommendation } from "@/ai/flows/ai-meal-recommendation-flow";
 import { MealCard } from "./MealCard";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
+import { useFirestore, useCollection } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
+import { cn } from "@/lib/utils";
 
 interface RecommendationSectionProps {
   browsingHistory: string[];
@@ -21,16 +23,20 @@ export function RecommendationSection({
 }: RecommendationSectionProps) {
   const [recommendations, setRecommendations] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  const firestore = useFirestore();
+  const mealsQuery = query(collection(firestore!, "meals"), orderBy("name", "asc"));
+  const { data: allMeals } = useCollection<Meal>(mealsQuery as any);
 
   useEffect(() => {
     async function fetchRecs() {
-      if (browsingHistory.length === 0) return;
+      if (browsingHistory.length === 0 || !allMeals || allMeals.length === 0) return;
       
       setLoading(true);
       try {
         const result = await aiMealRecommendation({
           browsingHistory,
-          availableMeals: MEALS.map(m => ({
+          availableMeals: allMeals.map(m => ({
             name: m.name,
             category: m.category,
             description: m.description,
@@ -40,7 +46,7 @@ export function RecommendationSection({
           }))
         });
 
-        const recMeals = MEALS.filter(m => 
+        const recMeals = allMeals.filter(m => 
           result.recommendations.includes(m.name)
         );
         setRecommendations(recMeals);
@@ -52,40 +58,51 @@ export function RecommendationSection({
     }
 
     fetchRecs();
-  }, [browsingHistory]);
+  }, [browsingHistory, allMeals]);
 
   if (browsingHistory.length === 0 || (!loading && recommendations.length === 0)) return null;
 
   return (
-    <div className="py-8 px-4 bg-primary/5 rounded-3xl my-6">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="p-2 bg-secondary rounded-xl">
-          <Sparkles size={20} className="text-secondary-foreground" />
+    <section className="py-10 px-8 bg-gradient-to-br from-primary/10 via-white to-primary/5 rounded-[3rem] border border-primary/10 my-10 relative overflow-hidden shadow-sm">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32" />
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-10 relative z-10">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="p-2.5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 animate-pulse">
+              <Sparkles size={20} />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Sugerido para Você</span>
+          </div>
+          <h2 className="text-3xl font-black tracking-tighter text-foreground leading-none">SELEÇÃO DO CHEF</h2>
+          <p className="text-sm font-medium text-muted-foreground max-w-sm">
+            Com base no seu histórico, separamos estas delícias que combinam com seu perfil.
+          </p>
         </div>
-        <div>
-          <h2 className="text-xl font-extrabold text-foreground">Popular Favorites</h2>
-          <p className="text-xs text-muted-foreground">Based on your recent browsing</p>
+        <div className="hidden md:flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest cursor-pointer group">
+          Ver todas as opções <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-64 bg-muted rounded-2xl" />
+            <div key={i} className="h-80 bg-white/50 rounded-[2rem] border border-border/20 animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
           {recommendations.map(meal => (
-            <MealCard 
-              key={meal.id} 
-              meal={meal} 
-              onAddToCart={onAddToCart} 
-              onOpenDetails={onOpenDetails} 
-            />
+            <div key={meal.id} className="animate-in slide-in-from-bottom-6 duration-500 [animation-fill-mode:both] ease-out">
+              <MealCard 
+                meal={meal} 
+                onAddToCart={onAddToCart} 
+                onOpenDetails={onOpenDetails} 
+              />
+            </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
