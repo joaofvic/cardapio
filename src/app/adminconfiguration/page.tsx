@@ -58,7 +58,9 @@ import {
   EyeOff,
   BrainCircuit,
   ArrowUpRight,
-  History
+  History,
+  CalendarDays,
+  Timer
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -112,7 +114,7 @@ import {
 import { collection, query, orderBy, limit, doc, updateDoc, setDoc, deleteDoc, addDoc, getDocs } from "firebase/firestore";
 import { Order, Meal } from "@/app/types/meal";
 import { MEALS } from "@/app/data/meals";
-import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, subDays } from "date-fns";
+import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, subDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -142,6 +144,21 @@ interface MealPlanLead {
   createdAt: string;
 }
 
+interface DaySchedule {
+  isOpen: boolean;
+  openAt: string;
+  closeAt: string;
+}
+
+interface SpecialDate {
+  id: string;
+  date: string;
+  isOpen: boolean;
+  label: string;
+  openAt?: string;
+  closeAt?: string;
+}
+
 interface SiteSettings {
   isAiAnalysisEnabled: boolean;
   isCouponsEnabled: boolean;
@@ -152,6 +169,8 @@ interface SiteSettings {
   nextDeliveryDate: string;
   orderDeadline: string;
   openingHours: string;
+  detailedSchedule?: Record<string, DaySchedule>;
+  specialDates?: SpecialDate[];
 }
 
 interface Coupon {
@@ -183,6 +202,26 @@ const DEFAULT_CATEGORIES = [
   { id: 'Combo', label: 'Combo' }
 ];
 
+const DAYS_OF_WEEK = [
+  { id: 'monday', label: 'Segunda-feira' },
+  { id: 'tuesday', label: 'Terça-feira' },
+  { id: 'wednesday', label: 'Quarta-feira' },
+  { id: 'thursday', label: 'Quinta-feira' },
+  { id: 'friday', label: 'Sexta-feira' },
+  { id: 'saturday', label: 'Sábado' },
+  { id: 'sunday', label: 'Domingo' }
+];
+
+const DEFAULT_SCHEDULE: Record<string, DaySchedule> = {
+  monday: { isOpen: true, openAt: '10:00', closeAt: '22:00' },
+  tuesday: { isOpen: true, openAt: '10:00', closeAt: '22:00' },
+  wednesday: { isOpen: true, openAt: '10:00', closeAt: '22:00' },
+  thursday: { isOpen: true, openAt: '10:00', closeAt: '22:00' },
+  friday: { isOpen: true, openAt: '10:00', closeAt: '22:00' },
+  saturday: { isOpen: true, openAt: '10:00', closeAt: '22:00' },
+  sunday: { isOpen: false, openAt: '10:00', closeAt: '18:00' }
+};
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [cityFilter, setCityFilter] = useState("all");
@@ -195,11 +234,18 @@ export default function AdminDashboard() {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isCouponListOpen, setIsCouponListOpen] = useState(false);
   const [isCouponEditorOpen, setIsCouponEditorOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<MealPlanLead | null>(null);
+  const [isSpecialDateDialogOpen, setIsSpecialDateDialogOpen] = useState(false);
   
+  const [selectedLead, setSelectedLead] = useState<MealPlanLead | null>(null);
   const [editingMeal, setEditingMeal] = useState<Partial<Meal> | null>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon> | null>(null);
+  const [newSpecialDate, setNewSpecialDate] = useState<Partial<SpecialDate>>({
+    isOpen: false,
+    label: '',
+    openAt: '10:00',
+    closeAt: '22:00'
+  });
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -250,7 +296,9 @@ export default function AdminDashboard() {
     couponDiscountPercent: 50,
     nextDeliveryDate: "18/12/2025",
     orderDeadline: "Quinta-feira",
-    openingHours: "Segunda a Sábado, das 10h às 22h"
+    openingHours: "Segunda a Sábado, das 10h às 22h",
+    detailedSchedule: DEFAULT_SCHEDULE,
+    specialDates: []
   };
 
   const currentCategories = categoriesData?.length > 0 ? categoriesData : DEFAULT_CATEGORIES;
@@ -329,6 +377,35 @@ export default function AdminDashboard() {
     const settingsRef = doc(firestore, "settings", "global");
     setDoc(settingsRef, newSettings, { merge: true });
     toast({ title: "Configuração Salva", description: "Alteração aplicada com sucesso." });
+  };
+
+  const handleUpdateDaySchedule = (dayId: string, field: keyof DaySchedule, value: any) => {
+    const currentSchedule = settings.detailedSchedule || DEFAULT_SCHEDULE;
+    const updatedSchedule = {
+      ...currentSchedule,
+      [dayId]: {
+        ...currentSchedule[dayId],
+        [field]: value
+      }
+    };
+    handleSaveSettings("detailedSchedule", updatedSchedule);
+  };
+
+  const handleAddSpecialDate = () => {
+    if (!newSpecialDate.date || !newSpecialDate.label) {
+      toast({ variant: "destructive", title: "Dados incompletos", description: "Informe a data e o nome do evento." });
+      return;
+    }
+    const currentDates = settings.specialDates || [];
+    const updatedDates = [...currentDates, { ...newSpecialDate, id: Date.now().toString() } as SpecialDate];
+    handleSaveSettings("specialDates", updatedDates);
+    setNewSpecialDate({ isOpen: false, label: '', openAt: '10:00', closeAt: '22:00' });
+    setIsSpecialDateDialogOpen(false);
+  };
+
+  const handleRemoveSpecialDate = (id: string) => {
+    const updatedDates = (settings.specialDates || []).filter(d => d.id !== id);
+    handleSaveSettings("specialDates", updatedDates);
   };
 
   const handleSaveMeal = (e: React.FormEvent) => {
@@ -634,91 +711,57 @@ export default function AdminDashboard() {
 
         <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
-              <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
-                <Store className="text-primary" /> Operacional da Loja
-              </CardTitle>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
-                  <div className="space-y-1">
-                    <h4 className="font-black text-sm uppercase">Status do Delivery</h4>
-                    <p className="text-xs font-medium text-muted-foreground">Controle a abertura instantânea da loja.</p>
-                  </div>
-                  <Switch 
-                    checked={settings.isDeliveryOpen} 
-                    onCheckedChange={(v) => handleSaveSettings("isDeliveryOpen", v)} 
-                    className="data-[state=checked]:bg-primary scale-125"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
-                  <div className="space-y-1">
-                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Análise de IA <BrainCircuit size={16} className="text-primary" /></h4>
-                    <p className="text-xs font-medium text-muted-foreground">Processamento automático de planos alimentares.</p>
-                  </div>
-                  <Switch 
-                    checked={settings.isAiAnalysisEnabled} 
-                    onCheckedChange={(v) => handleSaveSettings("isAiAnalysisEnabled", v)} 
-                    className="data-[state=checked]:bg-primary scale-125"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
-                  <div className="space-y-1">
-                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Visibilidade Veggie <Salad size={16} className="text-primary" /></h4>
-                    <p className="text-xs font-medium text-muted-foreground">Exibir categoria vegetariana no menu.</p>
-                  </div>
-                  <Switch 
-                    checked={settings.isVeggieCategoryVisible} 
-                    onCheckedChange={(v) => handleSaveSettings("isVeggieCategoryVisible", v)} 
-                    className="data-[state=checked]:bg-primary scale-125"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
-                  <div className="space-y-1">
-                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Uso de Cupons <Ticket size={16} className="text-primary" /></h4>
-                    <p className="text-xs font-medium text-muted-foreground">Habilitar checkout com descontos.</p>
-                  </div>
-                  <Switch 
-                    checked={settings.isCouponsEnabled} 
-                    onCheckedChange={(v) => handleSaveSettings("isCouponsEnabled", v)} 
-                    className="data-[state=checked]:bg-primary scale-125"
-                  />
-                </div>
-              </div>
-            </Card>
-
             <div className="space-y-8">
               <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
                 <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
-                  <CalendarClock className="text-primary" /> Agenda de Entregas
+                  <Store className="text-primary" /> Operacional da Loja
                 </CardTitle>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Data de Entrega</Label>
-                    <Input 
-                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
-                      value={settings.nextDeliveryDate}
-                      onChange={(e) => handleSaveSettings("nextDeliveryDate", e.target.value)}
-                      placeholder="Ex: Sábado, 18/12"
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                    <div className="space-y-1">
+                      <h4 className="font-black text-sm uppercase">Status do Delivery</h4>
+                      <p className="text-xs font-medium text-muted-foreground">Controle a abertura instantânea da loja.</p>
+                    </div>
+                    <Switch 
+                      checked={settings.isDeliveryOpen} 
+                      onCheckedChange={(v) => handleSaveSettings("isDeliveryOpen", v)} 
+                      className="data-[state=checked]:bg-primary scale-125"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prazo Final p/ Pedidos</Label>
-                    <Input 
-                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
-                      value={settings.orderDeadline}
-                      onChange={(e) => handleSaveSettings("orderDeadline", e.target.value)}
-                      placeholder="Ex: Quinta-feira"
+
+                  <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                    <div className="space-y-1">
+                      <h4 className="font-black text-sm uppercase flex items-center gap-2">Análise de IA <BrainCircuit size={16} className="text-primary" /></h4>
+                      <p className="text-xs font-medium text-muted-foreground">Processamento automático de planos alimentares.</p>
+                    </div>
+                    <Switch 
+                      checked={settings.isAiAnalysisEnabled} 
+                      onCheckedChange={(v) => handleSaveSettings("isAiAnalysisEnabled", v)} 
+                      className="data-[state=checked]:bg-primary scale-125"
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Informativo de Funcionamento</Label>
-                    <Textarea 
-                      className="rounded-2xl h-24 bg-muted/20 border-none p-4 font-bold focus-visible:ring-primary"
-                      value={settings.openingHours}
-                      onChange={(e) => handleSaveSettings("openingHours", e.target.value)}
+
+                  <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                    <div className="space-y-1">
+                      <h4 className="font-black text-sm uppercase flex items-center gap-2">Visibilidade Veggie <Salad size={16} className="text-primary" /></h4>
+                      <p className="text-xs font-medium text-muted-foreground">Exibir categoria vegetariana no menu.</p>
+                    </div>
+                    <Switch 
+                      checked={settings.isVeggieCategoryVisible} 
+                      onCheckedChange={(v) => handleSaveSettings("isVeggieCategoryVisible", v)} 
+                      className="data-[state=checked]:bg-primary scale-125"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                    <div className="space-y-1">
+                      <h4 className="font-black text-sm uppercase flex items-center gap-2">Uso de Cupons <Ticket size={16} className="text-primary" /></h4>
+                      <p className="text-xs font-medium text-muted-foreground">Habilitar checkout com descontos.</p>
+                    </div>
+                    <Switch 
+                      checked={settings.isCouponsEnabled} 
+                      onCheckedChange={(v) => handleSaveSettings("isCouponsEnabled", v)} 
+                      className="data-[state=checked]:bg-primary scale-125"
                     />
                   </div>
                 </div>
@@ -744,6 +787,135 @@ export default function AdminDashboard() {
                     <Button variant="outline" className="flex-1 h-14 rounded-2xl border-white/20 text-white hover:bg-white/10 font-black uppercase text-[10px] tracking-widest" onClick={() => { setEditingCoupon({}); setIsCouponEditorOpen(true); }}>
                       Novo Código
                     </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            <div className="space-y-8">
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
+                  <CalendarDays className="text-primary" /> Escala de Funcionamento
+                </CardTitle>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    {DAYS_OF_WEEK.map((day) => {
+                      const daySchedule = (settings.detailedSchedule || DEFAULT_SCHEDULE)[day.id];
+                      return (
+                        <div key={day.id} className="flex items-center justify-between p-4 bg-muted/10 rounded-2xl border border-border/40 hover:bg-white transition-all">
+                          <div className="flex items-center gap-4">
+                            <Switch 
+                              checked={daySchedule.isOpen} 
+                              onCheckedChange={(v) => handleUpdateDaySchedule(day.id, "isOpen", v)}
+                              className="data-[state=checked]:bg-primary"
+                            />
+                            <div>
+                              <p className="font-black text-xs uppercase leading-none">{day.label}</p>
+                              <p className={cn("text-[9px] font-bold uppercase mt-1", daySchedule.isOpen ? "text-primary" : "text-destructive")}>
+                                {daySchedule.isOpen ? "Aberto" : "Fechado"}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {daySchedule.isOpen && (
+                            <div className="flex items-center gap-2">
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-black text-muted-foreground uppercase text-right">Abre</span>
+                                <Input 
+                                  type="time" 
+                                  className="h-8 w-24 rounded-lg bg-white border-none font-bold text-xs"
+                                  value={daySchedule.openAt}
+                                  onChange={(e) => handleUpdateDaySchedule(day.id, "openAt", e.target.value)}
+                                />
+                              </div>
+                              <span className="text-muted-foreground text-xs mt-3">às</span>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-black text-muted-foreground uppercase text-right">Fecha</span>
+                                <Input 
+                                  type="time" 
+                                  className="h-8 w-24 rounded-lg bg-white border-none font-bold text-xs"
+                                  value={daySchedule.closeAt}
+                                  onChange={(e) => handleUpdateDaySchedule(day.id, "closeAt", e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <Separator className="my-6" />
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-black text-sm uppercase flex items-center gap-2">
+                        <Timer size={16} className="text-primary" /> Datas Especiais & Exceções
+                      </h4>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-xl text-primary" onClick={() => setIsSpecialDateDialogOpen(true)}>
+                        <Plus size={18} />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {(settings.specialDates || []).length === 0 ? (
+                        <div className="p-10 border-2 border-dashed rounded-3xl text-center opacity-40">
+                          <p className="text-[10px] font-black uppercase tracking-widest">Nenhuma exceção cadastrada</p>
+                        </div>
+                      ) : (
+                        (settings.specialDates || []).map((date) => (
+                          <div key={date.id} className="flex items-center justify-between p-5 bg-primary/5 rounded-[2rem] border border-primary/20">
+                            <div className="flex items-center gap-4">
+                              <div className="bg-white p-3 rounded-2xl shadow-sm"><CalendarIcon size={18} className="text-primary" /></div>
+                              <div>
+                                <p className="font-black text-sm uppercase leading-none">{date.label}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                                  {format(parseISO(date.date), "dd/MM/yyyy")} • {date.isOpen ? `${date.openAt} às ${date.closeAt}` : "Fechado o dia todo"}
+                                </p>
+                              </div>
+                            </div>
+                            <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => handleRemoveSpecialDate(date.id)}>
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
+                  <CalendarClock className="text-primary" /> Agenda de Entregas
+                </CardTitle>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Data de Entrega</Label>
+                    <Input 
+                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
+                      value={settings.nextDeliveryDate}
+                      onChange={(e) => handleSaveSettings("nextDeliveryDate", e.target.value)}
+                      placeholder="Ex: Sábado, 18/12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prazo Final p/ Pedidos</Label>
+                    <Input 
+                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
+                      value={settings.orderDeadline}
+                      onChange={(e) => handleSaveSettings("orderDeadline", e.target.value)}
+                      placeholder="Ex: Quinta-feira"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Informativo de Funcionamento (Exibido no Site)</Label>
+                    <Textarea 
+                      className="rounded-2xl h-24 bg-muted/20 border-none p-4 font-bold focus-visible:ring-primary"
+                      value={settings.openingHours}
+                      onChange={(e) => handleSaveSettings("openingHours", e.target.value)}
+                    />
                   </div>
                 </div>
               </Card>
@@ -925,6 +1097,67 @@ export default function AdminDashboard() {
            </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Special Date Dialog */}
+      <Dialog open={isSpecialDateDialogOpen} onOpenChange={setIsSpecialDateDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Nova Exceção</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nome do Evento</Label>
+              <Input 
+                value={newSpecialDate.label} 
+                onChange={e => setNewSpecialDate({...newSpecialDate, label: e.target.value})}
+                placeholder="Ex: Feriado de Natal"
+                className="rounded-xl h-12 bg-muted/30 border-none font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Data</Label>
+              <Input 
+                type="date"
+                value={newSpecialDate.date} 
+                onChange={e => setNewSpecialDate({...newSpecialDate, date: e.target.value})}
+                className="rounded-xl h-12 bg-muted/30 border-none font-bold"
+              />
+            </div>
+            <div className="flex items-center justify-between p-4 bg-muted/10 rounded-2xl">
+               <Label className="font-bold uppercase text-xs">Estará Aberto?</Label>
+               <Switch 
+                 checked={newSpecialDate.isOpen} 
+                 onCheckedChange={v => setNewSpecialDate({...newSpecialDate, isOpen: v})}
+               />
+            </div>
+            {newSpecialDate.isOpen && (
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Abre às</Label>
+                   <Input 
+                     type="time"
+                     value={newSpecialDate.openAt} 
+                     onChange={e => setNewSpecialDate({...newSpecialDate, openAt: e.target.value})}
+                     className="rounded-xl h-12 bg-muted/30 border-none font-bold text-center"
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Fecha às</Label>
+                   <Input 
+                     type="time"
+                     value={newSpecialDate.closeAt} 
+                     onChange={e => setNewSpecialDate({...newSpecialDate, closeAt: e.target.value})}
+                     className="rounded-xl h-12 bg-muted/30 border-none font-bold text-center"
+                   />
+                 </div>
+               </div>
+            )}
+            <Button className="w-full h-14 rounded-full font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleAddSpecialDate}>
+              Salvar Exceção
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Leads Photo Preview Dialog */}
       <Dialog open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
