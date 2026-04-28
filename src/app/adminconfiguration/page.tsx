@@ -397,8 +397,13 @@ export default function AdminDashboard() {
       return;
     }
     const currentDates = settings.specialDates || [];
-    const updatedDates = [...currentDates, { ...newSpecialDate, id: Date.now().toString() } as SpecialDate];
-    handleSaveSettings("specialDates", updatedDates);
+    let updatedDates;
+    if (newSpecialDate.id) {
+      updatedDates = currentDates.map(d => d.id === newSpecialDate.id ? newSpecialDate : d);
+    } else {
+      updatedDates = [...currentDates, { ...newSpecialDate, id: Date.now().toString() } as SpecialDate];
+    }
+    handleSaveSettings("specialDates", updatedDates as SpecialDate[]);
     setNewSpecialDate({ isOpen: false, label: '', openAt: '10:00', closeAt: '22:00' });
     setIsSpecialDateDialogOpen(false);
   };
@@ -839,6 +844,9 @@ export default function AdminDashboard() {
                                   onChange={(e) => handleUpdateDaySchedule(day.id, "closeAt", e.target.value)}
                                 />
                               </div>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg ml-2 text-primary">
+                                <Pencil size={14} />
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -853,7 +861,7 @@ export default function AdminDashboard() {
                       <h4 className="font-black text-sm uppercase flex items-center gap-2">
                         <Timer size={16} className="text-primary" /> Datas Especiais & Exceções
                       </h4>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-xl text-primary" onClick={() => setIsSpecialDateDialogOpen(true)}>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-xl text-primary" onClick={() => { setNewSpecialDate({ isOpen: false, label: '', openAt: '10:00', closeAt: '22:00' }); setIsSpecialDateDialogOpen(true); }}>
                         <Plus size={18} />
                       </Button>
                     </div>
@@ -875,9 +883,14 @@ export default function AdminDashboard() {
                                 </p>
                               </div>
                             </div>
-                            <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => handleRemoveSpecialDate(date.id)}>
-                              <Trash2 size={16} />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-primary hover:bg-primary/10" onClick={() => { setNewSpecialDate(date); setIsSpecialDateDialogOpen(true); }}>
+                                <Pencil size={16} />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => handleRemoveSpecialDate(date.id)}>
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
                           </div>
                         ))
                       )}
@@ -1102,7 +1115,9 @@ export default function AdminDashboard() {
       <Dialog open={isSpecialDateDialogOpen} onOpenChange={setIsSpecialDateDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Nova Exceção</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+              {newSpecialDate.id ? "Editar Exceção" : "Nova Exceção"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="space-y-2">
@@ -1153,7 +1168,7 @@ export default function AdminDashboard() {
                </div>
             )}
             <Button className="w-full h-14 rounded-full font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleAddSpecialDate}>
-              Salvar Exceção
+              Salvar Alterações
             </Button>
           </div>
         </DialogContent>
