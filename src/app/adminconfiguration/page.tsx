@@ -54,7 +54,9 @@ import {
   CircleX,
   User as UserIcon,
   BarChart3,
-  ListFilter
+  ListFilter,
+  EyeOff,
+  BrainCircuit
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -108,7 +110,6 @@ import {
 import { collection, query, orderBy, limit, doc, updateDoc, setDoc, deleteDoc, addDoc, getDocs } from "firebase/firestore";
 import { Order, Meal } from "@/app/types/meal";
 import { MEALS } from "@/app/data/meals";
-import { UserProfile } from "@/app/page";
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -605,12 +606,12 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
               <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
-                <Store className="text-primary" /> Ajustes da Loja
+                <Store className="text-primary" /> Operacional da Loja
               </CardTitle>
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
                   <div className="space-y-1">
                     <h4 className="font-black text-sm uppercase">Status do Delivery</h4>
@@ -622,41 +623,104 @@ export default function AdminDashboard() {
                     className="data-[state=checked]:bg-primary scale-125"
                   />
                 </div>
-                
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Horário de Funcionamento</Label>
-                  <Textarea 
-                    className="rounded-2xl h-24 bg-muted/20 border-none p-4 font-bold focus-visible:ring-primary"
-                    value={settings.openingHours}
-                    onChange={(e) => handleSaveSettings("openingHours", e.target.value)}
+
+                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase flex items-center gap-2">IA de Recomendação <BrainCircuit size={16} className="text-primary" /></h4>
+                    <p className="text-xs font-medium text-muted-foreground">Ativar análise automática de planos alimentares.</p>
+                  </div>
+                  <Switch 
+                    checked={settings.isAiAnalysisEnabled} 
+                    onCheckedChange={(v) => handleSaveSettings("isAiAnalysisEnabled", v)} 
+                    className="data-[state=checked]:bg-primary scale-125"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Categoria Vegetariana <Salad size={16} className="text-primary" /></h4>
+                    <p className="text-xs font-medium text-muted-foreground">Mostrar ou ocultar itens vegetarianos no menu.</p>
+                  </div>
+                  <Switch 
+                    checked={settings.isVeggieCategoryVisible} 
+                    onCheckedChange={(v) => handleSaveSettings("isVeggieCategoryVisible", v)} 
+                    className="data-[state=checked]:bg-primary scale-125"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-sm uppercase flex items-center gap-2">Uso de Cupons <Ticket size={16} className="text-primary" /></h4>
+                    <p className="text-xs font-medium text-muted-foreground">Habilitar campo de cupom no checkout.</p>
+                  </div>
+                  <Switch 
+                    checked={settings.isCouponsEnabled} 
+                    onCheckedChange={(v) => handleSaveSettings("isCouponsEnabled", v)} 
+                    className="data-[state=checked]:bg-primary scale-125"
                   />
                 </div>
               </div>
             </Card>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary p-10 text-white relative overflow-hidden">
-               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
-               <h3 className="text-2xl font-black uppercase tracking-tighter mb-8 flex items-center gap-3">
-                 <Ticket size={28} /> Cupons de Desconto
-               </h3>
-               <div className="space-y-6 relative z-10">
-                 <div className="bg-white/10 p-6 rounded-3xl border border-white/20">
-                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Código Ativo Principal</p>
-                   <div className="flex items-center justify-between">
-                     <span className="text-3xl font-black tracking-tight">{settings.activeCouponCode}</span>
-                     <Badge className="bg-secondary text-secondary-foreground font-black px-4 py-1">{settings.couponDiscountPercent}% OFF</Badge>
-                   </div>
-                 </div>
-                 <div className="flex gap-4">
-                   <Button className="flex-1 h-14 rounded-2xl bg-white text-primary hover:bg-white/90 font-black uppercase text-xs" onClick={() => setIsCouponListOpen(true)}>
-                     Listar Cupons
-                   </Button>
-                   <Button variant="outline" className="flex-1 h-14 rounded-2xl border-white/20 text-white hover:bg-white/10 font-black uppercase text-xs" onClick={() => { setEditingCoupon({}); setIsCouponEditorOpen(true); }}>
-                     Novo Cupom
-                   </Button>
-                 </div>
-               </div>
-            </Card>
+            <div className="space-y-8">
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                <CardTitle className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-2">
+                  <CalendarClock className="text-primary" /> Prazos e Entregas
+                </CardTitle>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Próxima Entrega</Label>
+                    <Input 
+                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
+                      value={settings.nextDeliveryDate}
+                      onChange={(e) => handleSaveSettings("nextDeliveryDate", e.target.value)}
+                      placeholder="Ex: 18/12/2025"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prazo p/ Pedidos</Label>
+                    <Input 
+                      className="rounded-xl h-12 bg-muted/20 border-none font-bold"
+                      value={settings.orderDeadline}
+                      onChange={(e) => handleSaveSettings("orderDeadline", e.target.value)}
+                      placeholder="Ex: Quinta-feira"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Horário de Funcionamento</Label>
+                    <Textarea 
+                      className="rounded-2xl h-24 bg-muted/20 border-none p-4 font-bold focus-visible:ring-primary"
+                      value={settings.openingHours}
+                      onChange={(e) => handleSaveSettings("openingHours", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary p-10 text-white relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
+                <h3 className="text-2xl font-black uppercase tracking-tighter mb-8 flex items-center gap-3">
+                  <Ticket size={28} /> Cupons de Desconto
+                </h3>
+                <div className="space-y-6 relative z-10">
+                  <div className="bg-white/10 p-6 rounded-3xl border border-white/20">
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Código Ativo Principal</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-3xl font-black tracking-tight">{settings.activeCouponCode}</span>
+                      <Badge className="bg-secondary text-secondary-foreground font-black px-4 py-1">{settings.couponDiscountPercent}% OFF</Badge>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <Button className="flex-1 h-14 rounded-2xl bg-white text-primary hover:bg-white/90 font-black uppercase text-xs" onClick={() => setIsCouponListOpen(true)}>
+                      Listar Cupons
+                    </Button>
+                    <Button variant="outline" className="flex-1 h-14 rounded-2xl border-white/20 text-white hover:bg-white/10 font-black uppercase text-xs" onClick={() => { setEditingCoupon({}); setIsCouponEditorOpen(true); }}>
+                      Novo Cupom
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
@@ -857,7 +921,9 @@ export default function AdminDashboard() {
            <div className="pt-6">
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
-                  {(coupons || []).map(cp => (
+                  {coupons?.length === 0 ? (
+                    <div className="p-20 text-center font-bold text-muted-foreground uppercase text-xs tracking-widest">Nenhum cupom cadastrado.</div>
+                  ) : coupons?.map(cp => (
                     <div key={cp.id} className="flex items-center justify-between p-6 bg-muted/30 rounded-3xl border border-border/40">
                       <div>
                         <div className="flex items-center gap-3">
