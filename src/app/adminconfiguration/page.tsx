@@ -60,7 +60,8 @@ import {
   ArrowUpRight,
   History,
   CalendarDays,
-  Timer
+  Timer,
+  Infinity
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -423,7 +424,8 @@ export default function AdminDashboard() {
       imageUrl: editingMeal.imageUrl || "https://picsum.photos/seed/harvest/400/300",
       rating: editingMeal.rating || 5.0,
       isArchived: editingMeal.isArchived || false,
-      isAvailableForCombo: editingMeal.isAvailableForCombo !== undefined ? editingMeal.isAvailableForCombo : true
+      isAvailableForCombo: editingMeal.isAvailableForCombo !== undefined ? editingMeal.isAvailableForCombo : true,
+      stockQuantity: editingMeal.stockQuantity === undefined || editingMeal.stockQuantity === null ? null : Number(editingMeal.stockQuantity)
     };
     const mealRef = doc(firestore, "meals", mealId);
     setDoc(mealRef, mealData, { merge: true });
@@ -638,6 +640,7 @@ export default function AdminDashboard() {
                     <TableRow>
                       <TableHead className="font-black text-[10px] uppercase p-6">Item</TableHead>
                       <TableHead className="font-black text-[10px] uppercase p-6 text-center">Categoria</TableHead>
+                      <TableHead className="font-black text-[10px] uppercase p-6 text-center">Estoque</TableHead>
                       {isComboView ? (
                         <TableHead className="font-black text-[10px] uppercase p-6 text-center">Status no Combo</TableHead>
                       ) : (
@@ -667,6 +670,17 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="p-6 text-center">
                             <Badge variant="outline" className="rounded-lg font-black uppercase text-[9px] px-3">{meal.category}</Badge>
+                          </TableCell>
+                          <TableCell className="p-6 text-center font-black">
+                            {meal.stockQuantity === null || meal.stockQuantity === undefined ? (
+                              <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                                <Infinity size={14} /> <span className="text-[9px] uppercase tracking-widest">Infinito</span>
+                              </div>
+                            ) : (
+                              <span className={cn(meal.stockQuantity <= 5 ? "text-destructive" : "text-foreground")}>
+                                {meal.stockQuantity} un
+                              </span>
+                            )}
                           </TableCell>
                           {isComboView ? (
                             <TableCell className="p-6 text-center">
@@ -1234,6 +1248,16 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Calorias (Kcal)</Label>
                 <Input type="number" value={editingMeal?.calories || 0} onChange={e => setEditingMeal({...editingMeal, calories: parseInt(e.target.value)})} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label className="text-[10px] font-black uppercase ml-1 tracking-widest text-muted-foreground">Quantidade em Estoque (Deixe em branco para infinito)</Label>
+                <Input 
+                  type="number" 
+                  value={editingMeal?.stockQuantity === null || editingMeal?.stockQuantity === undefined ? "" : editingMeal.stockQuantity} 
+                  onChange={e => setEditingMeal({...editingMeal, stockQuantity: e.target.value === "" ? null : parseInt(e.target.value)})} 
+                  className="rounded-xl h-12 bg-muted/30 border-none font-bold" 
+                  placeholder="Ex: 12"
+                />
               </div>
             </div>
             <div className="space-y-2">

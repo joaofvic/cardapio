@@ -15,6 +15,7 @@ export interface Meal {
   isSugarFree?: boolean;
   isArchived?: boolean;
   isAvailableForCombo?: boolean;
+  stockQuantity?: number;
   configuration?: {
     marmitaCount: number;
     selectedSize: { label: string; price: number };

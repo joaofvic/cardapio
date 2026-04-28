@@ -102,7 +102,8 @@
         "isGlutenFree": { "type": "boolean" },
         "isSugarFree": { "type": "boolean" },
         "isArchived": { "type": "boolean", "default": false },
-        "isAvailableForCombo": { "type": "boolean", "default": true }
+        "isAvailableForCombo": { "type": "boolean", "default": true },
+        "stockQuantity": { "type": "number", "description": "The current stock quantity. If null, stock is infinite." }
       },
       "required": ["name", "category", "price"]
     },
