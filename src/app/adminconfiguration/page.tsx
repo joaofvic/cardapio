@@ -248,6 +248,10 @@ export default function AdminDashboard() {
     closeAt: '22:00'
   });
 
+  // Local states for schedule editing to avoid focus loss/re-render loops
+  const [editingDayId, setEditingDayId] = useState<string | null>(null);
+  const [tempDaySchedule, setTempDaySchedule] = useState<DaySchedule | null>(null);
+
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -380,13 +384,26 @@ export default function AdminDashboard() {
     toast({ title: "Configuração Salva", description: "Alteração aplicada com sucesso." });
   };
 
-  const handleUpdateDaySchedule = (dayId: string, field: keyof DaySchedule, value: any) => {
+  const handleCommitDaySchedule = () => {
+    if (!editingDayId || !tempDaySchedule) return;
+    
+    const currentSchedule = settings.detailedSchedule || DEFAULT_SCHEDULE;
+    const updatedSchedule = {
+      ...currentSchedule,
+      [editingDayId]: tempDaySchedule
+    };
+    handleSaveSettings("detailedSchedule", updatedSchedule);
+    setEditingDayId(null);
+    setTempDaySchedule(null);
+  };
+
+  const handleUpdateDayStatus = (dayId: string, isOpen: boolean) => {
     const currentSchedule = settings.detailedSchedule || DEFAULT_SCHEDULE;
     const updatedSchedule = {
       ...currentSchedule,
       [dayId]: {
         ...currentSchedule[dayId],
-        [field]: value
+        isOpen
       }
     };
     handleSaveSettings("detailedSchedule", updatedSchedule);
@@ -835,7 +852,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-4">
                             <Switch 
                               checked={daySchedule.isOpen} 
-                              onCheckedChange={(v) => handleUpdateDaySchedule(day.id, "isOpen", v)}
+                              onCheckedChange={(v) => handleUpdateDayStatus(day.id, v)}
                               className="data-[state=checked]:bg-primary"
                             />
                             <div>
@@ -851,36 +868,46 @@ export default function AdminDashboard() {
                               <div className="hidden md:flex flex-col items-end">
                                 <span className="text-[9px] font-black text-muted-foreground uppercase">{daySchedule.openAt} às {daySchedule.closeAt}</span>
                               </div>
-                              <Popover>
+                              <Popover onOpenChange={(open) => {
+                                if (open) {
+                                  setEditingDayId(day.id);
+                                  setTempDaySchedule(daySchedule);
+                                }
+                              }}>
                                 <PopoverTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary hover:bg-primary/10">
                                     <Pencil size={14} />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-64 p-4 rounded-[2rem] shadow-xl border-none">
-                                  <div className="space-y-4">
-                                    <h4 className="font-black text-xs uppercase tracking-tighter mb-2">Editar: {day.label}</h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <div className="space-y-1">
-                                        <Label className="text-[10px] font-black uppercase opacity-60">Abertura</Label>
-                                        <Input 
-                                          type="time" 
-                                          value={daySchedule.openAt}
-                                          onChange={(e) => handleUpdateDaySchedule(day.id, "openAt", e.target.value)}
-                                          className="h-10 rounded-xl bg-muted/30 border-none font-bold text-xs"
-                                        />
+                                  {tempDaySchedule && (
+                                    <div className="space-y-4">
+                                      <h4 className="font-black text-xs uppercase tracking-tighter mb-2">Editar: {day.label}</h4>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                          <Label className="text-[10px] font-black uppercase opacity-60">Abertura</Label>
+                                          <Input 
+                                            type="time" 
+                                            value={tempDaySchedule.openAt}
+                                            onChange={(e) => setTempDaySchedule({...tempDaySchedule, openAt: e.target.value})}
+                                            className="h-10 rounded-xl bg-muted/30 border-none font-bold text-xs"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-[10px] font-black uppercase opacity-60">Fechamento</Label>
+                                          <Input 
+                                            type="time" 
+                                            value={tempDaySchedule.closeAt}
+                                            onChange={(e) => setTempDaySchedule({...tempDaySchedule, closeAt: e.target.value})}
+                                            className="h-10 rounded-xl bg-muted/30 border-none font-bold text-xs"
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label className="text-[10px] font-black uppercase opacity-60">Fechamento</Label>
-                                        <Input 
-                                          type="time" 
-                                          value={daySchedule.closeAt}
-                                          onChange={(e) => handleUpdateDaySchedule(day.id, "closeAt", e.target.value)}
-                                          className="h-10 rounded-xl bg-muted/30 border-none font-bold text-xs"
-                                        />
-                                      </div>
+                                      <Button className="w-full h-10 rounded-xl font-black uppercase text-[10px] tracking-widest" onClick={handleCommitDaySchedule}>
+                                        Confirmar Horário
+                                      </Button>
                                     </div>
-                                  </div>
+                                  )}
                                 </PopoverContent>
                               </Popover>
                             </div>
