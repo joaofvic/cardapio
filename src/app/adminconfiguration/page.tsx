@@ -445,10 +445,46 @@ export default function AdminDashboard() {
       stockQuantity: editingMeal.stockQuantity === undefined || editingMeal.stockQuantity === null ? null : Number(editingMeal.stockQuantity)
     };
     const mealRef = doc(firestore, "meals", mealId);
-    setDoc(mealRef, mealData, { merge: true });
+    setDoc(mealRef, mealData, { merge: true })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: mealRef.path,
+          operation: 'write',
+          requestResourceData: mealData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
     setIsMealDialogOpen(false);
     setEditingMeal(null);
     toast({ title: "Sucesso", description: "Prato salvo no cardápio." });
+  };
+
+  const handleSaveCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firestore || !editingCategory) return;
+    
+    const categoryId = editingCategory.id || editingCategory.label?.toLowerCase().replace(/\s+/g, '-') || doc(collection(firestore, "categories")).id;
+    
+    const categoryData = {
+      ...editingCategory,
+      id: categoryId,
+      label: editingCategory.label
+    };
+
+    const categoryRef = doc(firestore, "categories", categoryId);
+    setDoc(categoryRef, categoryData, { merge: true })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: categoryRef.path,
+          operation: 'write',
+          requestResourceData: categoryData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    setIsCategoryDialogOpen(false);
+    setEditingCategory(null);
+    toast({ title: "Categoria Salva", description: "A categoria foi atualizada no cardápio." });
   };
 
   const handleArchiveMeal = (meal: Meal) => {
@@ -626,6 +662,18 @@ export default function AdminDashboard() {
                     >
                       {cat.label} <ChevronRight size={14} />
                     </button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingCategory(cat);
+                        setIsCategoryDialogOpen(true);
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -1195,6 +1243,32 @@ export default function AdminDashboard() {
            </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Category Dialog */}
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+              {editingCategory?.id ? "Editar Categoria" : "Nova Categoria"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveCategory} className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome da Categoria</Label>
+              <Input 
+                value={editingCategory?.label || ""} 
+                onChange={e => setEditingCategory({...editingCategory, label: e.target.value})}
+                placeholder="Ex: Massas"
+                className="rounded-xl h-12 bg-muted/30 border-none font-bold"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full h-14 rounded-full font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+              Salvar Categoria
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Special Date Dialog */}
       <Dialog open={isSpecialDateDialogOpen} onOpenChange={setIsSpecialDateDialogOpen}>
