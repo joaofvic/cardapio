@@ -825,28 +825,41 @@ export default function AdminDashboard() {
                           
                           {daySchedule.isOpen && (
                             <div className="flex items-center gap-2">
-                              <div className="flex flex-col">
-                                <span className="text-[8px] font-black text-muted-foreground uppercase text-right">Abre</span>
-                                <Input 
-                                  type="time" 
-                                  className="h-8 w-24 rounded-lg bg-white border-none font-bold text-xs"
-                                  value={daySchedule.openAt}
-                                  onChange={(e) => handleUpdateDaySchedule(day.id, "openAt", e.target.value)}
-                                />
+                              <div className="hidden md:flex flex-col items-end">
+                                <span className="text-[9px] font-black text-muted-foreground uppercase">{daySchedule.openAt} às {daySchedule.closeAt}</span>
                               </div>
-                              <span className="text-muted-foreground text-xs mt-3">às</span>
-                              <div className="flex flex-col">
-                                <span className="text-[8px] font-black text-muted-foreground uppercase text-right">Fecha</span>
-                                <Input 
-                                  type="time" 
-                                  className="h-8 w-24 rounded-lg bg-white border-none font-bold text-xs"
-                                  value={daySchedule.closeAt}
-                                  onChange={(e) => handleUpdateDaySchedule(day.id, "closeAt", e.target.value)}
-                                />
-                              </div>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg ml-2 text-primary">
-                                <Pencil size={14} />
-                              </Button>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary hover:bg-primary/10">
+                                    <Pencil size={14} />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 p-4 rounded-[2rem] shadow-xl border-none">
+                                  <div className="space-y-4">
+                                    <h4 className="font-black text-xs uppercase tracking-tighter mb-2">Editar: {day.label}</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="space-y-1">
+                                        <Label className="text-[10px] font-black uppercase opacity-60">Abertura</Label>
+                                        <Input 
+                                          type="time" 
+                                          value={daySchedule.openAt}
+                                          onChange={(e) => handleUpdateDaySchedule(day.id, "openAt", e.target.value)}
+                                          className="h-10 rounded-xl bg-muted/30 border-none font-bold text-xs"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[10px] font-black uppercase opacity-60">Fechamento</Label>
+                                        <Input 
+                                          type="time" 
+                                          value={daySchedule.closeAt}
+                                          onChange={(e) => handleUpdateDaySchedule(day.id, "closeAt", e.target.value)}
+                                          className="h-10 rounded-xl bg-muted/30 border-none font-bold text-xs"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             </div>
                           )}
                         </div>
