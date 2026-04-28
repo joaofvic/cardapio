@@ -71,7 +71,7 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-[3rem] bg-white shadow-2xl animate-in zoom-in duration-[500ms]">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-[3rem] bg-white shadow-2xl animate-in zoom-in duration-500">
         <div className="relative h-72 w-full">
           <Image 
             src={meal.imageUrl} 
@@ -108,7 +108,7 @@ export function MealDetailsDialog({ meal, isOpen, onClose, onAddToCart }: MealDe
           </p>
 
           {(meal.isDairyFree || meal.isGlutenFree || meal.isSugarFree) && (
-            <div className="flex flex-col gap-6 mb-10 p-8 bg-destructive/5 rounded-[2.5rem] border-2 border-destructive/10 animate-in slide-in-from-bottom-4 duration-[500ms]">
+            <div className="flex flex-col gap-6 mb-10 p-8 bg-destructive/5 rounded-[2.5rem] border-2 border-destructive/10 animate-in slide-in-from-bottom-4 duration-500">
               <h4 className="text-xs font-black uppercase tracking-[0.3em] text-destructive text-center">Restrições Alimentares</h4>
               <div className="flex justify-around items-center">
                 {meal.isDairyFree && (
