@@ -61,7 +61,10 @@ import {
   History,
   CalendarDays,
   Timer,
-  Infinity
+  Infinity,
+  Phone,
+  ThumbsUp,
+  Ban
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -248,7 +251,6 @@ export default function AdminDashboard() {
     closeAt: '22:00'
   });
 
-  // Local states for schedule editing to avoid focus loss/re-render loops
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
   const [tempDaySchedule, setTempDaySchedule] = useState<DaySchedule | null>(null);
 
@@ -601,10 +603,10 @@ export default function AdminDashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold'}} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeights: 'bold'}} />
                     <YAxis hide />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none', fontWeight: 'bold' }}
+                      contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none', fontWeights: 'bold' }}
                       formatter={(v: any) => [`R$ ${v}`, 'Vendas']}
                     />
                     <Area type="monotone" dataKey="vendas" stroke="hsl(var(--primary))" strokeWidth={4} fill="url(#colorSales)" />
@@ -1106,7 +1108,7 @@ export default function AdminDashboard() {
               <CardHeader className="p-8 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl font-black uppercase tracking-tighter">Fluxo de Pedidos</CardTitle>
-                  <CardDescription>Gestão centralizada das entregas.</CardDescription>
+                  <CardDescription>Gestão centralizada das entregas e aprovações.</CardDescription>
                 </div>
                 <div className="flex gap-3">
                   <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -1127,11 +1129,11 @@ export default function AdminDashboard() {
                      <TableHeader className="bg-muted/30">
                        <TableRow>
                          <TableHead className="font-black text-[10px] uppercase p-6">Pedido</TableHead>
-                         <TableHead className="font-black text-[10px] uppercase p-6">Cliente</TableHead>
+                         <TableHead className="font-black text-[10px] uppercase p-6">Cliente & Contato</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6 text-center">Qtde</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6 text-center">Total</TableHead>
                          <TableHead className="font-black text-[10px] uppercase p-6 text-center">Status</TableHead>
-                         <TableHead className="font-black text-[10px] uppercase p-6 text-right">Ações</TableHead>
+                         <TableHead className="font-black text-[10px] uppercase p-6 text-right">Gestão</TableHead>
                        </TableRow>
                      </TableHeader>
                      <TableBody>
@@ -1141,13 +1143,35 @@ export default function AdminDashboard() {
                               <TableCell className="p-6 font-black text-sm uppercase">#{order.id.slice(-4)}</TableCell>
                               <TableCell className="p-6">
                                 <div className="font-black text-sm uppercase leading-none">{order.customerName}</div>
-                                <div className="text-[9px] font-bold text-muted-foreground uppercase mt-1">{order.address?.city}</div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                                  <Phone size={10} className="text-primary" /> {order.userId}
+                                </div>
+                                <div className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">{order.address?.city}</div>
                               </TableCell>
                               <TableCell className="p-6 text-center font-bold text-sm">{order.items.length}</TableCell>
                               <TableCell className="p-6 text-center font-black text-primary">R$ {order.total.toFixed(2)}</TableCell>
                               <TableCell className="p-6 text-center">{getStatusBadge(order.status)}</TableCell>
                               <TableCell className="p-6 text-right">
                                 <div className="flex justify-end items-center gap-2">
+                                  {order.status === 'pending' && (
+                                    <>
+                                      <Button 
+                                        size="sm" 
+                                        className="h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 border-none font-black text-[9px] uppercase px-3"
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'preparing'); }}
+                                      >
+                                        <ThumbsUp size={12} className="mr-1" /> Aprovar
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        className="h-8 rounded-lg text-red-600 hover:bg-red-50 font-black text-[9px] uppercase px-3"
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'cancelled'); }}
+                                      >
+                                        <Ban size={12} className="mr-1" /> Cancelar
+                                      </Button>
+                                    </>
+                                  )}
                                   <Select value={order.status} onValueChange={(s) => handleUpdateStatus(order.id, s)}>
                                     <SelectTrigger className="h-9 w-[130px] rounded-xl border-none bg-muted/50 font-black text-[10px] uppercase">
                                       <SelectValue />
