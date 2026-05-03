@@ -824,30 +824,6 @@ export default function AdminDashboard() {
 
                   <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
                     <div className="space-y-1">
-                      <h4 className="font-black text-sm uppercase flex items-center gap-2">Análise de IA <BrainCircuit size={16} className="text-primary" /></h4>
-                      <p className="text-xs font-medium text-muted-foreground">Processamento automático de planos alimentares.</p>
-                    </div>
-                    <Switch 
-                      checked={settings.isAiAnalysisEnabled} 
-                      onCheckedChange={(v) => handleSaveSettings("isAiAnalysisEnabled", v)} 
-                      className="data-[state=checked]:bg-primary scale-125"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
-                    <div className="space-y-1">
-                      <h4 className="font-black text-sm uppercase flex items-center gap-2">Visibilidade Veggie <Salad size={16} className="text-primary" /></h4>
-                      <p className="text-xs font-medium text-muted-foreground">Exibir categoria vegetariana no menu.</p>
-                    </div>
-                    <Switch 
-                      checked={settings.isVeggieCategoryVisible} 
-                      onCheckedChange={(v) => handleSaveSettings("isVeggieCategoryVisible", v)} 
-                      className="data-[state=checked]:bg-primary scale-125"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-6 bg-muted/20 rounded-3xl border border-border/40">
-                    <div className="space-y-1">
                       <h4 className="font-black text-sm uppercase flex items-center gap-2">Uso de Cupons <Ticket size={16} className="text-primary" /></h4>
                       <p className="text-xs font-medium text-muted-foreground">Habilitar checkout com descontos.</p>
                     </div>
