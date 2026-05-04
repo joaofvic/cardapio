@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ernan\\\\Documents\\\\cardapio\" -Force)",
+      "Bash(Select-Object Name)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ernan\\\\Documents\\\\cardapio\" -Recurse -Name \"package.json\")",
+      "Bash(Select-Object -First 1)",
+      "Bash(node *)",
+      "PowerShell(npm install *)",
+      "PowerShell(npm run *)",
+      "Bash(npm run *)",
+      "Bash(npx next *)",
+      "Bash(NODE_ENV=production NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npx next build)",
+      "Bash(npx @next/codemod@canary next-lint-to-eslint-cli . --force)",
+      "Bash(npm install *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
