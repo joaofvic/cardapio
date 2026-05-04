@@ -46,10 +46,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { doc, setDoc, getDoc, collection } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { createClient } from "@/lib/supabase/client";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -94,7 +91,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   });
 
   const { toast } = useToast();
-  const firestore = useFirestore();
+  const supabase = useMemo(() => createClient(), []);
 
   const FREE_SHIPPING_THRESHOLD = 56.50;
   const DEFAULT_DELIVERY_FEE = 9.90;
@@ -133,14 +130,16 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10 && firestore && !user && !searching) {
+    if (cleanPhone.length >= 10 && !user && !searching) {
       const handleLookup = async () => {
         setSearching(true);
         try {
-          const docRef = doc(firestore, "users", cleanPhone);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data() as UserProfile;
+          const { data } = await supabase
+            .from("users")
+            .select("*")
+            .eq("phone", cleanPhone)
+            .maybeSingle();
+          if (data) {
             setName(data.name);
             if (data.address) {
               setAddress({
@@ -160,7 +159,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       };
       handleLookup();
     }
-  }, [phone, firestore, user, selectedCity, searching]);
+  }, [phone, supabase, user, selectedCity, searching]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
@@ -242,7 +241,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   };
 
   const handleFinalize = async () => {
-    if (!firestore || isFinalizing) return;
+    if (isFinalizing) return;
 
     setIsFinalizing(true);
     const cleanPhone = phone.replace(/\D/g, "");
@@ -267,37 +266,17 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       subtotal,
       deliveryFee,
       total,
-      status: 'pending',
+      status: 'pending' as const,
       paymentMethod: selectedPayment,
       createdAt: new Date().toISOString(),
       address: isNotHome ? address : { ...address, street: "Localização GPS" }
     };
 
-    const userRef = doc(firestore, "users", cleanPhone);
-    const orderRef = doc(firestore, "orders", orderId);
-
     try {
-      // Salva usuário
-      setDoc(userRef, userProfile, { merge: true })
-        .catch(async (error) => {
-          const permissionError = new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'write',
-            requestResourceData: userProfile,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
-
-      // Salva pedido
-      setDoc(orderRef, orderData)
-        .catch(async (error) => {
-          const permissionError = new FirestorePermissionError({
-            path: orderRef.path,
-            operation: 'create',
-            requestResourceData: orderData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
+      await Promise.all([
+        supabase.from("users").upsert(userProfile, { onConflict: "phone" }),
+        supabase.from("orders").insert(orderData),
+      ]);
 
       onIdentify(userProfile);
 
@@ -305,9 +284,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
         title: "Pedido Recebido!",
         description: "Estamos preparando suas delícias.",
       });
-      
-      // Limpar carrinho e fechar (idealmente deveria ter um estado global ou callback aqui)
-      // window.location.reload(); 
+
       onClose();
     } catch (e) {
       toast({

@@ -110,20 +110,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  useCollection, 
-  useDoc, 
-  useFirestore 
-} from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, setDoc, deleteDoc, addDoc, getDocs } from "firebase/firestore";
+import { useTable, useRow } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Order, Meal } from "@/app/types/meal";
-import { MEALS } from "@/app/data/meals";
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, subDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { useToast } from "@/hooks/use-toast";
 import {
   AreaChart,
@@ -254,45 +247,27 @@ export default function AdminDashboard() {
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
   const [tempDaySchedule, setTempDaySchedule] = useState<DaySchedule | null>(null);
 
-  const firestore = useFirestore();
+  const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
 
-  const ordersQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "orders"), orderBy("createdAt", "desc"));
-  }, [firestore]);
-
-  const leadsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "leads"), orderBy("createdAt", "desc"));
-  }, [firestore]);
-
-  const mealsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "meals"), orderBy("name", "asc"));
-  }, [firestore]);
-
-  const categoriesQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "categories"), orderBy("label", "asc"));
-  }, [firestore]);
-
-  const couponsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "coupons"), orderBy("createdAt", "desc"));
-  }, [firestore]);
-
-  const settingsDocRef = useMemo(() => {
-    if (!firestore) return null;
-    return doc(firestore, "settings", "global");
-  }, [firestore]);
-
-  const { data: orders } = useCollection<Order>(ordersQuery as any);
-  const { data: leads } = useCollection<MealPlanLead>(leadsQuery as any);
-  const { data: meals, loading: loadingMeals } = useCollection<Meal>(mealsQuery as any);
-  const { data: categoriesData, loading: loadingCategories } = useCollection<any>(categoriesQuery as any);
-  const { data: coupons } = useCollection<Coupon>(couponsQuery as any);
-  const { data: settingsData } = useDoc<SiteSettings>(settingsDocRef as any);
+  const { data: orders } = useTable<Order>("orders", {
+    orderBy: { column: "createdAt", ascending: false },
+    realtime: true,
+  });
+  const { data: leads } = useTable<MealPlanLead>("leads", {
+    orderBy: { column: "createdAt", ascending: false },
+    realtime: true,
+  });
+  const { data: meals, loading: loadingMeals } = useTable<Meal>("meals", {
+    orderBy: { column: "name", ascending: true },
+  });
+  const { data: categoriesData, loading: loadingCategories } = useTable<any>("categories", {
+    orderBy: { column: "label", ascending: true },
+  });
+  const { data: coupons } = useTable<Coupon>("coupons", {
+    orderBy: { column: "createdAt", ascending: false },
+  });
+  const { data: settingsData } = useRow<SiteSettings>("settings", "global");
 
   const settings = settingsData || {
     isAiAnalysisEnabled: true,
@@ -310,27 +285,8 @@ export default function AdminDashboard() {
 
   const currentCategories = categoriesData?.length > 0 ? categoriesData : DEFAULT_CATEGORIES;
 
-  useEffect(() => {
-    if (!firestore || loadingMeals || loadingCategories) return;
-
-    if (meals && meals.length === 0) {
-      MEALS.forEach(meal => {
-        const mealRef = doc(firestore, "meals", meal.id);
-        setDoc(mealRef, { 
-          ...meal, 
-          isArchived: meal.isArchived || false,
-          isAvailableForCombo: meal.isAvailableForCombo !== undefined ? meal.isAvailableForCombo : meal.category !== 'Combo' 
-        }, { merge: true });
-      });
-    }
-
-    if (categoriesData && categoriesData.length === 0) {
-      DEFAULT_CATEGORIES.forEach(cat => {
-        const catRef = doc(firestore, "categories", cat.id);
-        setDoc(catRef, cat, { merge: true });
-      });
-    }
-  }, [firestore, meals, categoriesData, loadingMeals, loadingCategories]);
+  // Seed inicial é aplicado via supabase/seed.sql (executado no dashboard / CLI),
+  // não em cliente. Nada a fazer aqui.
 
   const stats = useMemo(() => {
     const dayOrders = orders?.filter(o => isSameDay(new Date(o.createdAt), selectedDate || new Date())) || [];
@@ -372,17 +328,13 @@ export default function AdminDashboard() {
   }, [orders]);
 
   const handleUpdateStatus = (orderId: string, newStatus: string) => {
-    if (!firestore) return;
-    const orderRef = doc(firestore, "orders", orderId);
-    updateDoc(orderRef, { status: newStatus });
+    supabase.from("orders").update({ status: newStatus }).eq("id", orderId).then(() => {});
     toast({ title: "Status Atualizado", description: `Pedido movido para ${newStatus}` });
   };
 
   const handleSaveSettings = (key: keyof SiteSettings, value: any) => {
-    if (!firestore) return;
-    const newSettings = { ...settings, [key]: value };
-    const settingsRef = doc(firestore, "settings", "global");
-    setDoc(settingsRef, newSettings, { merge: true });
+    const newSettings = { ...settings, [key]: value, id: "global" };
+    supabase.from("settings").upsert(newSettings, { onConflict: "id" }).then(() => {});
     toast({ title: "Configuração Salva", description: "Alteração aplicada com sucesso." });
   };
 
@@ -435,8 +387,8 @@ export default function AdminDashboard() {
 
   const handleSaveMeal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firestore || !editingMeal) return;
-    const mealId = editingMeal.id || doc(collection(firestore, "meals")).id;
+    if (!editingMeal) return;
+    const mealId = editingMeal.id || crypto.randomUUID();
     const mealData = {
       ...editingMeal,
       id: mealId,
@@ -446,16 +398,7 @@ export default function AdminDashboard() {
       isAvailableForCombo: editingMeal.isAvailableForCombo !== undefined ? editingMeal.isAvailableForCombo : true,
       stockQuantity: editingMeal.stockQuantity === undefined || editingMeal.stockQuantity === null ? null : Number(editingMeal.stockQuantity)
     };
-    const mealRef = doc(firestore, "meals", mealId);
-    setDoc(mealRef, mealData, { merge: true })
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: mealRef.path,
-          operation: 'write',
-          requestResourceData: mealData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    supabase.from("meals").upsert(mealData, { onConflict: "id" }).then(() => {});
     setIsMealDialogOpen(false);
     setEditingMeal(null);
     toast({ title: "Sucesso", description: "Prato salvo no cardápio." });
@@ -463,26 +406,17 @@ export default function AdminDashboard() {
 
   const handleSaveCategory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firestore || !editingCategory) return;
-    
-    const categoryId = editingCategory.id || editingCategory.label?.toLowerCase().replace(/\s+/g, '-') || doc(collection(firestore, "categories")).id;
-    
+    if (!editingCategory) return;
+
+    const categoryId = editingCategory.id || editingCategory.label?.toLowerCase().replace(/\s+/g, '-') || crypto.randomUUID();
+
     const categoryData = {
       ...editingCategory,
       id: categoryId,
       label: editingCategory.label
     };
 
-    const categoryRef = doc(firestore, "categories", categoryId);
-    setDoc(categoryRef, categoryData, { merge: true })
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: categoryRef.path,
-          operation: 'write',
-          requestResourceData: categoryData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    supabase.from("categories").upsert(categoryData, { onConflict: "id" }).then(() => {});
 
     setIsCategoryDialogOpen(false);
     setEditingCategory(null);
@@ -490,22 +424,18 @@ export default function AdminDashboard() {
   };
 
   const handleArchiveMeal = (meal: Meal) => {
-    if (!firestore) return;
-    const mealRef = doc(firestore, "meals", meal.id);
-    updateDoc(mealRef, { isArchived: !meal.isArchived });
+    supabase.from("meals").update({ isArchived: !meal.isArchived }).eq("id", meal.id).then(() => {});
     toast({ title: meal.isArchived ? "Prato Reativado" : "Prato Arquivado" });
   };
 
   const handleToggleComboAvailability = (mealId: string, value: boolean) => {
-    if (!firestore) return;
-    const mealRef = doc(firestore, "meals", mealId);
-    updateDoc(mealRef, { isAvailableForCombo: value });
+    supabase.from("meals").update({ isAvailableForCombo: value }).eq("id", mealId).then(() => {});
   };
 
   const handleSaveCoupon = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firestore || !editingCoupon) return;
-    const couponId = editingCoupon.id || doc(collection(firestore, "coupons")).id;
+    if (!editingCoupon) return;
+    const couponId = editingCoupon.id || crypto.randomUUID();
     const couponData = {
       ...editingCoupon,
       id: couponId,
@@ -513,8 +443,7 @@ export default function AdminDashboard() {
       createdAt: editingCoupon.createdAt || new Date().toISOString(),
       isActive: editingCoupon.isActive !== undefined ? editingCoupon.isActive : true
     };
-    const couponRef = doc(firestore, "coupons", couponId);
-    setDoc(couponRef, couponData, { merge: true });
+    supabase.from("coupons").upsert(couponData, { onConflict: "id" }).then(() => {});
     setIsCouponEditorOpen(false);
     setEditingCoupon(null);
     toast({ title: "Cupom Salvo" });
@@ -1436,8 +1365,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col items-end gap-1">
                           <Switch checked={cp.isActive} onCheckedChange={(v) => {
-                            const ref = doc(firestore!, "coupons", cp.id);
-                            updateDoc(ref, { isActive: v });
+                            supabase.from("coupons").update({ isActive: v }).eq("id", cp.id).then(() => {});
                           }} />
                           <span className="text-[8px] font-black uppercase text-muted-foreground">{cp.isActive ? "Ativo" : "Inativo"}</span>
                         </div>

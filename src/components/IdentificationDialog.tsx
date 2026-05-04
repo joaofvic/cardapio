@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Phone, Loader2, Pencil, CheckCircle2 } from "lucide-react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { createClient } from "@/lib/supabase/client";
 import { UserProfile } from "@/app/page";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 interface IdentificationDialogProps {
   isOpen: boolean;
@@ -31,7 +28,7 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const firestore = useFirestore();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (isOpen) {
@@ -47,14 +44,16 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
 
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10 && firestore && !initialUser && !loading && !searching) {
+    if (cleanPhone.length >= 10 && !initialUser && !loading && !searching) {
       const handleLookup = async () => {
         setSearching(true);
         try {
-          const docRef = doc(firestore, "users", cleanPhone);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data() as UserProfile;
+          const { data } = await supabase
+            .from("users")
+            .select("*")
+            .eq("phone", cleanPhone)
+            .maybeSingle();
+          if (data) {
             setName(data.name);
           }
         } catch (error) {
@@ -64,15 +63,15 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
       };
       handleLookup();
     }
-  }, [phone, firestore, initialUser, loading, searching]);
+  }, [phone, supabase, initialUser, loading, searching]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !firestore) return;
+    if (!name || !phone) return;
 
     setLoading(true);
     const cleanPhone = phone.replace(/\D/g, "");
-    
+
     const userProfile: UserProfile = {
       name,
       phone: cleanPhone,
@@ -84,18 +83,8 @@ export function IdentificationDialog({ isOpen, onClose, onIdentify, initialUser 
       }
     };
 
-    const docRef = doc(firestore, "users", cleanPhone);
-    
-    setDoc(docRef, userProfile, { merge: true })
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'write',
-          requestResourceData: userProfile,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    
+    supabase.from("users").upsert(userProfile, { onConflict: "phone" }).then(() => {});
+
     onIdentify(userProfile);
     setLoading(false);
   };

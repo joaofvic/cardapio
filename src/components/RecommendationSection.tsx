@@ -6,8 +6,7 @@ import { Meal } from "@/app/types/meal";
 import { aiMealRecommendation } from "@/ai/flows/ai-meal-recommendation-flow";
 import { MealCard } from "./MealCard";
 import { Sparkles, ArrowRight } from "lucide-react";
-import { useFirestore, useCollection } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
+import { useTable } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 interface RecommendationSectionProps {
@@ -24,9 +23,9 @@ export function RecommendationSection({
   const [recommendations, setRecommendations] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(false);
   
-  const firestore = useFirestore();
-  const mealsQuery = query(collection(firestore!, "meals"), orderBy("name", "asc"));
-  const { data: allMeals } = useCollection<Meal>(mealsQuery as any);
+  const { data: allMeals } = useTable<Meal>("meals", {
+    orderBy: { column: "name", ascending: true },
+  });
 
   useEffect(() => {
     async function fetchRecs() {

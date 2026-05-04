@@ -19,8 +19,7 @@ import { SpotlightSection } from "@/components/SpotlightSection";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore, useDoc } from "@/firebase";
-import { collection, query, orderBy, doc } from "firebase/firestore";
+import { useTable, useRow } from "@/lib/supabase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
@@ -54,27 +53,15 @@ export default function HarvestBitesApp() {
   const [editingCombo, setEditingCombo] = useState<Meal | null>(null);
   const [browsingHistory, setBrowsingHistory] = useState<string[]>([]);
   
-  const firestore = useFirestore();
   const { toast } = useToast();
 
-  const mealsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "meals"), orderBy("name", "asc"));
-  }, [firestore]);
-
-  const categoriesQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "categories"), orderBy("label", "asc"));
-  }, [firestore]);
-
-  const settingsDocRef = useMemo(() => {
-    if (!firestore) return null;
-    return doc(firestore, "settings", "global");
-  }, [firestore]);
-
-  const { data: meals, loading: loadingMeals } = useCollection<Meal>(mealsQuery as any);
-  const { data: categoriesData } = useCollection<any>(categoriesQuery as any);
-  const { data: settings } = useDoc<any>(settingsDocRef as any);
+  const { data: meals, loading: loadingMeals } = useTable<Meal>("meals", {
+    orderBy: { column: "name", ascending: true },
+  });
+  const { data: categoriesData } = useTable<any>("categories", {
+    orderBy: { column: "label", ascending: true },
+  });
+  const { data: settings } = useRow<any>("settings", "global");
 
   useEffect(() => {
     const savedUser = localStorage.getItem('harvest_bites_user');

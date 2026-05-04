@@ -1,7 +1,7 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
-import { FirebaseClientProvider } from '@/firebase';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Harvest Bites | Refeições Saudáveis',
@@ -21,9 +21,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased min-h-screen pb-20">
-        <FirebaseClientProvider>
-          {children}
-        </FirebaseClientProvider>
+        {children}
       </body>
     </html>
   );

@@ -11,10 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { analyzeMealPlan } from "@/ai/flows/analyze-meal-plan-flow";
 import { UserProfile } from "@/app/page";
-import { useFirestore } from "@/firebase";
-import { doc, setDoc, collection } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { createClient } from "@/lib/supabase/client";
+import { useMemo } from "react";
 
 interface ComboAIConfiguratorProps {
   onAddToCart: (combo: Meal) => void;
@@ -29,7 +27,7 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
   const [textPlan, setTextPlan] = useState("");
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
   const { toast } = useToast();
-  const firestore = useFirestore();
+  const supabase = useMemo(() => createClient(), []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,28 +61,17 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
 
     setLoading(true);
     try {
-      if (firestore) {
-        const leadId = `LEAD-${Date.now()}`;
-        const leadRef = doc(firestore, "leads", leadId);
-        const leadData = {
-          userId: user.phone,
-          customerName: user.name,
-          textPlan,
-          photoDataUri: photoDataUri || null,
-          status: 'pending',
-          createdAt: new Date().toISOString()
-        };
-
-        setDoc(leadRef, leadData)
-          .catch(async (error) => {
-            const permissionError = new FirestorePermissionError({
-              path: leadRef.path,
-              operation: 'create',
-              requestResourceData: leadData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-          });
-      }
+      const leadId = `LEAD-${Date.now()}`;
+      const leadData = {
+        id: leadId,
+        userId: user.phone,
+        customerName: user.name,
+        textPlan,
+        photoDataUri: photoDataUri || null,
+        status: 'pending' as const,
+        createdAt: new Date().toISOString()
+      };
+      supabase.from("leads").insert(leadData).then(() => {});
 
       await analyzeMealPlan({
         textPlan: textPlan || undefined,
