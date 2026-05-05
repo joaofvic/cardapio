@@ -59,12 +59,19 @@ interface CartSheetProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
   onEditCombo?: (meal: Meal) => void;
+  onCheckoutComplete?: () => void;
 }
 
 type CheckoutStep = 'cart' | 'payment';
 type PaymentType = 'online' | 'delivery';
 
-export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdentify, onUpdateQuantity, onRemove, onEditCombo }: CartSheetProps) {
+type CouponRule = { code: string; percent: number; minSubtotal: number };
+// TODO: mover para tabela `coupons` no Supabase
+const COUPON_RULES: CouponRule[] = [
+  { code: 'ADAS', percent: 0.5, minSubtotal: 0 },
+];
+
+export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdentify, onUpdateQuantity, onRemove, onEditCombo, onCheckoutComplete }: CartSheetProps) {
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [paymentType, setPaymentType] = useState<PaymentType>('online');
   const [isNotHome, setIsNotHome] = useState(false);
@@ -90,6 +97,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     complement: '',
     reference: ''
   });
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const { toast } = useToast();
   const supabase = useMemo(() => createClient(), []);
@@ -163,13 +171,15 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   }, [phone, supabase, user, selectedCity, searching]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const discountAmount = appliedCoupon === 'ADAS' ? subtotal * 0.5 : 0;
-  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const activeRule = COUPON_RULES.find((r) => r.code === appliedCoupon && subtotal >= r.minSubtotal);
+  const discountAmount = activeRule ? subtotal * activeRule.percent : 0;
+  const subtotalAfterDiscount = subtotal - discountAmount;
+  const isFreeShipping = subtotalAfterDiscount >= FREE_SHIPPING_THRESHOLD;
   const deliveryFee = items.length > 0 ? (isFreeShipping ? 0 : DEFAULT_DELIVERY_FEE) : 0;
-  const total = subtotal + deliveryFee - discountAmount;
+  const total = subtotalAfterDiscount + deliveryFee;
 
-  const freeShippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const amountToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const freeShippingProgress = Math.min(100, (subtotalAfterDiscount / FREE_SHIPPING_THRESHOLD) * 100);
+  const amountToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotalAfterDiscount);
 
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
@@ -182,20 +192,31 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
   }, [needsChange, changeFor, total]);
 
   const handleApplyCoupon = () => {
-    if (couponCode.toUpperCase() === 'ADAS') {
-      setAppliedCoupon('ADAS');
-      toast({
-        title: "Cupom Aplicado!",
-        description: "Você ganhou 50% de desconto no subtotal.",
-      });
-    } else {
+    const code = couponCode.toUpperCase();
+    const rule = COUPON_RULES.find((r) => r.code === code);
+    if (!rule) {
       setAppliedCoupon("");
       toast({
         variant: "destructive",
         title: "Cupom Inválido",
         description: "O código informado não é válido ou expirou.",
       });
+      return;
     }
+    if (subtotal < rule.minSubtotal) {
+      setAppliedCoupon("");
+      toast({
+        variant: "destructive",
+        title: "Cupom não aplicável",
+        description: `Subtotal mínimo de ${formatCurrency(rule.minSubtotal)} para usar ${rule.code}.`,
+      });
+      return;
+    }
+    setAppliedCoupon(rule.code);
+    toast({
+      title: "Cupom Aplicado!",
+      description: `Você ganhou ${Math.round(rule.percent * 100)}% de desconto no subtotal.`,
+    });
   };
 
   const handleGetLocation = () => {
@@ -209,18 +230,24 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     }
 
     navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        toast({
+          variant: "destructive",
+          title: "Erro de Localização",
+          description: "Coordenadas inválidas. Informe o endereço manualmente.",
+        });
+        return;
+      }
+      setCoords({ lat: latitude, lng: longitude });
       setLocationCaptured(true);
-      setAddress(prev => ({ 
-        ...prev, 
-        street: 'Localização GPS',
-        number: 'Referência GPS',
-        neighborhood: 'Referência GPS'
-      }));
       toast({
         title: "Localização Capturada!",
-        description: "Sua posição foi identificada.",
+        description: `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
       });
-    }, (error) => {
+    }, () => {
+      setCoords(null);
+      setLocationCaptured(false);
       toast({
         variant: "destructive",
         title: "Erro de Localização",
@@ -229,11 +256,11 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     });
   };
 
-  const isFormValid = name.trim().length > 2 && 
-                    phone.replace(/\D/g, "").length >= 10 && 
-                    (isNotHome ? 
-                      (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '') : 
-                      (locationCaptured || (address.street.trim() !== '' && address.number.trim() !== ''))
+  const isFormValid = name.trim().length > 2 &&
+                    phone.replace(/\D/g, "").length >= 10 &&
+                    (isNotHome
+                      ? (address.street.trim() !== '' && address.number.trim() !== '' && address.neighborhood.trim() !== '')
+                      : (locationCaptured && coords !== null) || (address.street.trim() !== '' && address.number.trim() !== '')
                     );
 
   const handleNextStep = () => {
@@ -251,6 +278,12 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       phone: cleanPhone,
       address
     };
+
+    const orderAddress = isNotHome
+      ? { ...address }
+      : coords
+        ? { ...address, lat: coords.lat, lng: coords.lng }
+        : { ...address };
 
     const orderId = `HB-${Date.now()}`;
     const orderData = {
@@ -270,7 +303,7 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       status: 'pending' as const,
       paymentMethod: selectedPayment,
       createdAt: new Date().toISOString(),
-      address: isNotHome ? address : { ...address, street: "Localização GPS" }
+      address: orderAddress,
     };
 
     const parsed = OrderInsertSchema.safeParse(orderData);
@@ -285,12 +318,16 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
     }
 
     try {
-      await Promise.all([
-        supabase.from("users").upsert(userProfile, { onConflict: "phone" }),
-        supabase.from("orders").insert(parsed.data),
-      ]);
+      const { error: orderError } = await supabase.from("orders").insert(parsed.data);
+      if (orderError) throw orderError;
+
+      const { error: userError } = await supabase.from("users").upsert(userProfile, { onConflict: "phone" });
+      if (userError) {
+        console.warn("Order saved but user upsert failed:", userError.message);
+      }
 
       onIdentify(userProfile);
+      onCheckoutComplete?.();
 
       toast({
         title: "Pedido Recebido!",
@@ -299,10 +336,11 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
 
       onClose();
     } catch (e) {
+      const description = e instanceof Error ? e.message : "Não conseguimos processar seu pedido agora.";
       toast({
         variant: "destructive",
         title: "Erro ao Finalizar",
-        description: "Não conseguimos processar seu pedido agora.",
+        description,
       });
     } finally {
       setIsFinalizing(false);

@@ -63,6 +63,8 @@ export default function HarvestBitesApp() {
   });
   const { data: settings } = useRow<any>("settings", "global");
 
+  const [cartHydrated, setCartHydrated] = useState(false);
+
   useEffect(() => {
     const savedUser = localStorage.getItem('harvest_bites_user');
     if (savedUser) {
@@ -78,7 +80,31 @@ export default function HarvestBitesApp() {
     if (savedHistory) {
       setBrowsingHistory(JSON.parse(savedHistory));
     }
+    const savedCart = localStorage.getItem('harvest_bites_cart');
+    if (savedCart) {
+      try {
+        const parsed = JSON.parse(savedCart);
+        if (Array.isArray(parsed)) setCartItems(parsed);
+      } catch {
+        localStorage.removeItem('harvest_bites_cart');
+      }
+    }
+    setCartHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!cartHydrated) return;
+    if (cartItems.length === 0) {
+      localStorage.removeItem('harvest_bites_cart');
+    } else {
+      localStorage.setItem('harvest_bites_cart', JSON.stringify(cartItems));
+    }
+  }, [cartItems, cartHydrated]);
+
+  const handleClearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem('harvest_bites_cart');
+  };
 
   const categories = useMemo(() => {
     const base = [{ id: 'Todos', label: 'Todos' }, { id: 'Combos', label: 'Combo Semanal' }];
@@ -428,6 +454,7 @@ export default function HarvestBitesApp() {
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}
         onEditCombo={handleEditCombo}
+        onCheckoutComplete={handleClearCart}
       />
 
       <IdentificationDialog 
