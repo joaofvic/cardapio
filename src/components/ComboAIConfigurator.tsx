@@ -61,7 +61,7 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
     }
 
     const leadId = `LEAD-${Date.now()}`;
-    const leadData = {
+    const baseLead = {
       id: leadId,
       userId: user.phone,
       customerName: user.name,
@@ -71,7 +71,7 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
       createdAt: new Date().toISOString()
     };
 
-    const parsed = LeadInsertSchema.safeParse(leadData);
+    const parsed = LeadInsertSchema.safeParse(baseLead);
     if (!parsed.success) {
       toast({
         variant: "destructive",
@@ -82,11 +82,10 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
     }
 
     setLoading(true);
+    let aiSummary = "";
+    let aiError = "";
     try {
-      const { error: insertError } = await supabase.from("leads").insert(parsed.data);
-      if (insertError) throw insertError;
-
-      await analyzeMealPlan({
+      const result = await analyzeMealPlan({
         textPlan: textPlan || undefined,
         photoDataUri: photoDataUri || undefined,
         availableMeals: availableMeals.filter(m => m.category !== 'Combo').map(m => ({
@@ -98,6 +97,24 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
           calories: m.calories
         }))
       });
+      aiSummary = JSON.stringify(result);
+    } catch (error) {
+      console.error("AI analysis error:", error);
+      aiError = error instanceof Error ? error.message : "unknown";
+    }
+
+    const enrichedTextPlan = aiSummary
+      ? `${textPlan}\n\n[AI:${aiSummary}]`
+      : aiError
+        ? `${textPlan}\n\n[AI_ERROR:${aiError}]`
+        : textPlan;
+
+    try {
+      const { error: insertError } = await supabase.from("leads").insert({
+        ...parsed.data,
+        textPlan: enrichedTextPlan,
+      });
+      if (insertError) throw insertError;
 
       setSubmitted(true);
       toast({
@@ -105,7 +122,7 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
         description: "Recebemos suas informações com sucesso.",
       });
     } catch (error) {
-      console.error("Lead/AI error:", error);
+      console.error("Lead insert error:", error);
       toast({
         variant: "destructive",
         title: "Não foi possível enviar",
