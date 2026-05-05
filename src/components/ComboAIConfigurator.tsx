@@ -60,20 +60,12 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
     }
 
     setLoading(true);
-    try {
-      const leadId = `LEAD-${Date.now()}`;
-      const leadData = {
-        id: leadId,
-        userId: user.phone,
-        customerName: user.name,
-        textPlan,
-        photoDataUri: photoDataUri || null,
-        status: 'pending' as const,
-        createdAt: new Date().toISOString()
-      };
-      supabase.from("leads").insert(leadData).then(() => {});
+    const leadId = `LEAD-${Date.now()}`;
+    let aiSummary = "";
+    let aiError = "";
 
-      await analyzeMealPlan({
+    try {
+      const result = await analyzeMealPlan({
         textPlan: textPlan || undefined,
         photoDataUri: photoDataUri || undefined,
         availableMeals: availableMeals.filter(m => m.category !== 'Combo').map(m => ({
@@ -85,15 +77,44 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
           calories: m.calories
         }))
       });
+      aiSummary = JSON.stringify(result);
     } catch (error) {
       console.error("AI analysis error:", error);
-    } finally {
+      aiError = error instanceof Error ? error.message : "unknown";
+    }
+
+    const enrichedTextPlan = aiSummary
+      ? `${textPlan}\n\n[AI:${aiSummary}]`
+      : aiError
+        ? `${textPlan}\n\n[AI_ERROR:${aiError}]`
+        : textPlan;
+
+    try {
+      const { error: insertError } = await supabase.from("leads").insert({
+        id: leadId,
+        userId: user.phone,
+        customerName: user.name,
+        textPlan: enrichedTextPlan,
+        photoDataUri: photoDataUri || null,
+        status: 'pending' as const,
+        createdAt: new Date().toISOString(),
+      });
+      if (insertError) throw insertError;
+
       setSubmitted(true);
-      setLoading(false);
       toast({
         title: "Plano Recebido!",
         description: "Recebemos suas informações com sucesso.",
       });
+    } catch (error) {
+      console.error("Lead insert error:", error);
+      toast({
+        variant: "destructive",
+        title: "Não foi possível enviar",
+        description: "Tente novamente em instantes.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
