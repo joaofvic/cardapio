@@ -113,6 +113,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTable, useRow } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/client";
 import { Order, Meal } from "@/app/types/meal";
+import { canTransition, getNextStatuses, ORDER_STATUS_LABELS, OrderStatus } from "@/lib/orders/status";
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, subDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -327,9 +328,31 @@ export default function AdminDashboard() {
     });
   }, [orders]);
 
-  const handleUpdateStatus = (orderId: string, newStatus: string) => {
-    supabase.from("orders").update({ status: newStatus }).eq("id", orderId).then(() => {});
-    toast({ title: "Status Atualizado", description: `Pedido movido para ${newStatus}` });
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    const order = orders?.find((o) => o.id === orderId);
+    if (order && !canTransition(order.status as OrderStatus, newStatus)) {
+      toast({
+        variant: "destructive",
+        title: "Transição inválida",
+        description: `Não é possível ir de ${ORDER_STATUS_LABELS[order.status as OrderStatus]} para ${ORDER_STATUS_LABELS[newStatus]}.`,
+      });
+      return;
+    }
+    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
+    if (error) {
+      toast({ variant: "destructive", title: "Falha ao atualizar", description: error.message });
+      return;
+    }
+    toast({ title: "Status Atualizado", description: `Pedido movido para ${ORDER_STATUS_LABELS[newStatus]}` });
+  };
+
+  const handleUpdateLeadStatus = async (leadId: string, newStatus: "pending" | "responded") => {
+    const { error } = await supabase.from("leads").update({ status: newStatus }).eq("id", leadId);
+    if (error) {
+      toast({ variant: "destructive", title: "Falha ao atualizar", description: error.message });
+      return;
+    }
+    toast({ title: "Lead Atualizado", description: newStatus === "responded" ? "Marcado como lido" : "Reaberto" });
   };
 
   const handleSaveSettings = (key: keyof SiteSettings, value: any) => {
@@ -1013,7 +1036,7 @@ export default function AdminDashboard() {
                                 <Eye size={16} />
                               </Button>
                             )}
-                            <Button className="rounded-xl h-10 px-5 font-black text-[9px] uppercase tracking-widest" onClick={() => handleUpdateStatus(lead.id, lead.status === 'pending' ? 'responded' : 'pending')}>
+                            <Button className="rounded-xl h-10 px-5 font-black text-[9px] uppercase tracking-widest" onClick={() => handleUpdateLeadStatus(lead.id, lead.status === 'pending' ? 'responded' : 'pending')}>
                               {lead.status === 'pending' ? 'Marcar como Lido' : 'Reabrir'}
                             </Button>
                           </div>
@@ -1087,7 +1110,7 @@ export default function AdminDashboard() {
                                       <Button 
                                         size="sm" 
                                         className="h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 border-none font-black text-[9px] uppercase px-3"
-                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'preparing'); }}
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'preparing'); }}
                                       >
                                         <ThumbsUp size={12} className="mr-1" /> Aprovar
                                       </Button>
@@ -1095,22 +1118,21 @@ export default function AdminDashboard() {
                                         size="sm" 
                                         variant="ghost"
                                         className="h-8 rounded-lg text-red-600 hover:bg-red-50 font-black text-[9px] uppercase px-3"
-                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'cancelled'); }}
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); }}
                                       >
                                         <Ban size={12} className="mr-1" /> Cancelar
                                       </Button>
                                     </>
                                   )}
-                                  <Select value={order.status} onValueChange={(s) => handleUpdateStatus(order.id, s)}>
+                                  <Select value={order.status} onValueChange={(s) => handleUpdateOrderStatus(order.id, s as OrderStatus)}>
                                     <SelectTrigger className="h-9 w-[130px] rounded-xl border-none bg-muted/50 font-black text-[10px] uppercase">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl">
-                                      <SelectItem value="pending">Pendente</SelectItem>
-                                      <SelectItem value="preparing">Preparando</SelectItem>
-                                      <SelectItem value="delivery">Em Rota</SelectItem>
-                                      <SelectItem value="completed">Concluído</SelectItem>
-                                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                                      <SelectItem value={order.status} disabled>{ORDER_STATUS_LABELS[order.status as OrderStatus]}</SelectItem>
+                                      {getNextStatuses(order.status as OrderStatus).map((s) => (
+                                        <SelectItem key={s} value={s}>{ORDER_STATUS_LABELS[s]}</SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                   {expandedOrders.includes(order.id) ? <ChevronDown size={14} className="text-muted-foreground rotate-180 transition-transform" /> : <ChevronDown size={14} className="text-muted-foreground transition-transform" />}

@@ -10,6 +10,8 @@ export interface UseTableOptions {
   enabled?: boolean;
 }
 
+const REALTIME_DEBOUNCE_MS = 150;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useTable<T = any>(
   tableName: string | null,
@@ -33,14 +35,20 @@ export function useTable<T = any>(
     }
 
     let cancelled = false;
+    let requestSeq = 0;
+    let latestApplied = -1;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     setLoading(true);
 
     const fetchData = async () => {
+      const myReq = ++requestSeq;
       let q = supabase.from(tableName).select('*');
       if (orderColumn) q = q.order(orderColumn, { ascending: orderAscending });
       if (limit) q = q.limit(limit);
       const { data: rows, error: err } = await q;
       if (cancelled) return;
+      if (myReq < latestApplied) return;
+      latestApplied = myReq;
       if (err) {
         setError(new Error(err.message));
         setData([]);
@@ -65,13 +73,18 @@ export function useTable<T = any>(
         'postgres_changes',
         { event: '*', schema: 'public', table: tableName },
         () => {
-          fetchData();
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+            fetchData();
+          }, REALTIME_DEBOUNCE_MS);
         }
       )
       .subscribe();
 
     return () => {
       cancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [supabase, tableName, orderColumn, orderAscending, limit, realtime, enabled]);
