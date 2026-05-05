@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { analyzeMealPlan } from "@/ai/flows/analyze-meal-plan-flow";
 import { UserProfile } from "@/app/page";
 import { createClient } from "@/lib/supabase/client";
+import { LeadInsertSchema } from "@/lib/schemas/order";
 import { useMemo } from "react";
 
 interface ComboAIConfiguratorProps {
@@ -59,19 +60,31 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
       return;
     }
 
+    const leadId = `LEAD-${Date.now()}`;
+    const leadData = {
+      id: leadId,
+      userId: user.phone,
+      customerName: user.name,
+      textPlan,
+      photoDataUri: photoDataUri || null,
+      status: 'pending' as const,
+      createdAt: new Date().toISOString()
+    };
+
+    const parsed = LeadInsertSchema.safeParse(leadData);
+    if (!parsed.success) {
+      toast({
+        variant: "destructive",
+        title: "Dados inválidos",
+        description: parsed.error.issues[0]?.message ?? "Verifique os dados.",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const leadId = `LEAD-${Date.now()}`;
-      const leadData = {
-        id: leadId,
-        userId: user.phone,
-        customerName: user.name,
-        textPlan,
-        photoDataUri: photoDataUri || null,
-        status: 'pending' as const,
-        createdAt: new Date().toISOString()
-      };
-      supabase.from("leads").insert(leadData).then(() => {});
+      const { error: insertError } = await supabase.from("leads").insert(parsed.data);
+      if (insertError) throw insertError;
 
       await analyzeMealPlan({
         textPlan: textPlan || undefined,
@@ -85,15 +98,21 @@ export function ComboAIConfigurator({ onAddToCart, user, availableMeals, onIdent
           calories: m.calories
         }))
       });
-    } catch (error) {
-      console.error("AI analysis error:", error);
-    } finally {
+
       setSubmitted(true);
-      setLoading(false);
       toast({
         title: "Plano Recebido!",
         description: "Recebemos suas informações com sucesso.",
       });
+    } catch (error) {
+      console.error("Lead/AI error:", error);
+      toast({
+        variant: "destructive",
+        title: "Não foi possível enviar",
+        description: "Tente novamente em instantes.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 

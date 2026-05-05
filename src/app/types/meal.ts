@@ -1,3 +1,4 @@
+import type { Address } from "@/lib/schemas/order";
 
 export interface Meal {
   id: string;
@@ -39,5 +40,5 @@ export interface Order {
   status: 'pending' | 'preparing' | 'delivery' | 'completed' | 'cancelled';
   paymentMethod: string;
   createdAt: string;
-  address: any;
+  address: Address;
 }
