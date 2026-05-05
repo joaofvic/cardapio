@@ -47,6 +47,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/lib/supabase/client";
+import { OrderInsertSchema } from "@/lib/schemas/order";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -272,10 +273,21 @@ export function CartSheet({ isOpen, onClose, items, user, selectedCity, onIdenti
       address: isNotHome ? address : { ...address, street: "Localização GPS" }
     };
 
+    const parsed = OrderInsertSchema.safeParse(orderData);
+    if (!parsed.success) {
+      toast({
+        variant: "destructive",
+        title: "Pedido inválido",
+        description: parsed.error.issues[0]?.message ?? "Verifique os dados.",
+      });
+      setIsFinalizing(false);
+      return;
+    }
+
     try {
       await Promise.all([
         supabase.from("users").upsert(userProfile, { onConflict: "phone" }),
-        supabase.from("orders").insert(orderData),
+        supabase.from("orders").insert(parsed.data),
       ]);
 
       onIdentify(userProfile);
